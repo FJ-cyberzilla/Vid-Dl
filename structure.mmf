@@ -1,0 +1,32 @@
+graph TD
+    A[Vid-Dl Root] --> B[config/]
+    A --> C[core/]
+    A --> D[ui/]
+    A --> E[utils/]
+    A --> F[tests/]
+    A --> G[main.py]
+    A --> H[pyproject.toml]
+    
+    B --> B1[colors.py]
+    B --> B2[settings.py]
+    
+    C --> C1[download_manager.py]
+    C --> C2[download_service.py]
+    C --> C3[protocols.py]
+    
+    D --> D1[banners.py]
+    D --> D2[menus.py]
+    D --> D3[progress_bars.py]
+    
+    E --> E1[helpers.py]
+    E --> E2[validators.py]
+    
+    F --> F1[test_sota.py]
+    F --> F2[test_architecture.py]
+
+    style A fill:#FF6600,stroke:#333,stroke-width:2px,color:#fff
+    style B fill:#333,color:#fff
+    style C fill:#333,color:#fff
+    style D fill:#333,color:#fff
+    style E fill:#333,color:#fff
+    style F fill:#333,color:#fff
