@@ -1,13 +1,57 @@
 """Interactive Command Center."""
 
 import sys
+from pathlib import Path
+
 from rich.prompt import Prompt
-from config.settings import check_ffmpeg, get_download_path
+
 from config.colors import THEME, MUTED
-from ui.banners import render_main_banner, print_error, print_success, console
+from config.settings import check_ffmpeg, get_download_path
 from core.download_manager import SOTADownloadManager
 from core.download_service import DownloadService
-from utils.validators import is_valid_input
+from core.protocols import DownloadOptions
+from utils.validators import is_valid_input  # moved before ui imports
+from ui.banners import render_main_banner, print_error, print_success, console
+
+
+def _get_quality_choice(is_audio: bool) -> str:
+    """
+    Prompt the user for quality selection and return the corresponding quality string.
+    """
+    console.print("\n")
+    if is_audio:
+        console.print(f"[{THEME}]1.[/] High (320kbps)")
+        console.print(f"[{THEME}]2.[/] Medium (192kbps)")
+        console.print(f"[{THEME}]3.[/] Low (128kbps)")
+        q_choice = Prompt.ask(
+            f"[{THEME}]Select Audio Quality[/]",
+            choices=["1", "2", "3"],
+            default="1",
+        )
+        quality_map = {"1": "320", "2": "192", "3": "128"}
+    else:
+        console.print(f"[{THEME}]1.[/] Maximum (1080p+)")
+        console.print(f"[{THEME}]2.[/] High (720p)")
+        console.print(f"[{THEME}]3.[/] Standard (480p)")
+        q_choice = Prompt.ask(
+            f"[{THEME}]Select Video Quality[/]",
+            choices=["1", "2", "3"],
+            default="1",
+        )
+        quality_map = {"1": "best", "2": "720", "3": "480"}
+    return quality_map[q_choice]
+
+
+def _handle_results(results, output_path: Path):
+    """Display a summary of download results."""
+    total = len(results)
+    successful = sum(1 for r in results if r.status.value == "completed")
+    failed = total - successful
+    if successful == total:
+        print_success(f"All {total} downloads completed successfully!")
+    else:
+        console.print(f"[yellow]{successful} succeeded, {failed} failed.[/]")
+    console.print(f"Files saved to {output_path}")
 
 
 def launch_command_center():
@@ -19,7 +63,8 @@ def launch_command_center():
 
     while True:
         render_main_banner()
-        console.print(f"[{MUTED}]Storage Route: {get_download_path()}[/]\n")
+        output_path = Path(get_download_path())
+        console.print(f"[{MUTED}]Storage Route: {output_path}[/]\n")
 
         console.print(f"[{THEME}]1.[/] Download Video (MP4 / Playlist / Batch)")
         console.print(f"[{THEME}]2.[/] Download Audio (MP3 / Playlist / Batch)")
@@ -41,42 +86,33 @@ def launch_command_center():
             continue
 
         is_audio = choice == "2"
+        quality = _get_quality_choice(is_audio)
 
-        console.print("\n")
-        if is_audio:
-            console.print(f"[{THEME}]1.[/] High (320kbps)")
-            console.print(f"[{THEME}]2.[/] Medium (192kbps)")
-            console.print(f"[{THEME}]3.[/] Low (128kbps)")
-            q_choice = Prompt.ask(
-                f"[{THEME}]Select Audio Quality[/]",
-                choices=["1", "2", "3"],
-                default="1",
-            )
-            quality_map = {"1": "320", "2": "192", "3": "128"}
-        else:
-            console.print(f"[{THEME}]1.[/] Maximum (1080p+)")
-            console.print(f"[{THEME}]2.[/] High (720p)")
-            console.print(f"[{THEME}]3.[/] Standard (480p)")
-            q_choice = Prompt.ask(
-                f"[{THEME}]Select Video Quality[/]",
-                choices=["1", "2", "3"],
-                default="1",
-            )
-            quality_map = {"1": "best", "2": "720", "3": "480"}
+        download_options = DownloadOptions(
+            quality=quality,
+            format="mp3" if is_audio else None,
+            output_dir=output_path,
+            overwrite=False,
+            retries=3,
+            timeout=30.0,
+        )
 
-        selected_quality = quality_map[q_choice]
-        manager = SOTADownloadManager(is_audio=is_audio, quality=selected_quality)
+        manager = SOTADownloadManager()
         service = DownloadService(manager)
 
         try:
             console.print("\n")
-            service.process_target(target)
-            print_success(f"Operation complete! Files saved to {get_download_path()}")
+            results = service.process_target(target, options=download_options)
+            _handle_results(results, output_path)
             input("\nPress Enter to continue...")
+
         except KeyboardInterrupt:
-            # Allows users to abort slow/mistaken downloads cleanly and return to menu
-            console.print(f"\n[{MUTED}]Download cancelled by user. Returning to menu...[/]")
+            service.cancel()
+            console.print(
+                f"\n[{MUTED}]Operation cancelled by user. Returning to menu...[/]"
+            )
             input("\nPress Enter to continue...")
+
         except Exception as e:
             print_error(str(e))
             input("\nPress Enter to continue...")
