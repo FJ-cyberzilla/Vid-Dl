@@ -33,3 +33,6 @@ GEMINI.md
 # OS Files
 .DS_Store
 Thumbs.db
+.gemini/
+plan1.txt
+test_import.py
