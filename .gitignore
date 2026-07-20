@@ -36,3 +36,4 @@ Thumbs.db
 .gemini/
 plan1.txt
 test_import.py
+uv.lock
