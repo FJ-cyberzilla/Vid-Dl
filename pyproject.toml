@@ -10,7 +10,9 @@ requires-python = ">=3.10"
 dependencies = [
     "yt-dlp>=2026.07.04",
     "rich>=13.7.1",
-    "mutagen>=1.47.0"
+    "mutagen>=1.47.0",
+    "pydantic>=2.8.2",
+    "tenacity>=8.5.0"
 ]
 
 [project.scripts]
@@ -20,7 +22,10 @@ sota = "main:main_menu"
 packages = ["config", "core", "ui", "utils"]
 py-modules = ["main"]
 
-[tool.black]
+[tool.ruff]
 line-length = 88
-target-version = ['py310']
-include = '\.pyi?$'
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "S"]
+ignore = []

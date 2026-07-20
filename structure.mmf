@@ -13,6 +13,9 @@ graph TD
     C --> C1[download_manager.py]
     C --> C2[download_service.py]
     C --> C3[protocols.py]
+    C --> C4[adapters.py]
+    C --> C5[controller.py]
+    C --> C6[fallback.py]
     
     D --> D1[banners.py]
     D --> D2[menus.py]

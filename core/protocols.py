@@ -1,9 +1,9 @@
 """Core protocols and interface definitions for the SOTA project."""
 
 from typing import Protocol, Optional, Any, Dict
-from dataclasses import dataclass, field
 from pathlib import Path
 from enum import Enum
+from pydantic import BaseModel, Field
 
 
 # ---------- Domain Models ----------
@@ -16,26 +16,25 @@ class DownloadStatus(Enum):
     CANCELLED = "cancelled"
 
 
-@dataclass
-class DownloadOptions:
-    """Configuration for a download operation."""
-    output_dir: Path = Path(".")
+class DownloadOptions(BaseModel):
+    """Configuration for a download operation with validation."""
+    output_dir: Path = Field(default_factory=lambda: Path("."))
     quality: str = "best"
     format: Optional[str] = None
     overwrite: bool = False
     retries: int = 3
     timeout: Optional[float] = 30.0
     cookiefile: Optional[Path] = None
-    extra_args: Dict[str, Any] = field(default_factory=dict)
+    extra_args: Dict[str, Any] = Field(default_factory=dict)
+    dry_run: bool = False
 
 
-@dataclass
-class DownloadResult:
-    """Result of a download attempt."""
+class DownloadResult(BaseModel):
+    """Result of a download attempt with validation."""
     status: DownloadStatus
     file_path: Optional[Path] = None
     error: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 # ---------- Progress Reporting ----------
@@ -81,10 +80,16 @@ class ProgressReporter(Protocol):
 
 
 # ---------- Download Execution ----------
+class DownloaderBackend(Protocol):
+    """
+    Protocol for a download backend implementation.
+    """
+    def download(self, target: str, options: DownloadOptions, progress_hook: Callable) -> DownloadResult:
+        """Execute a download."""
+
 class Downloader(Protocol):
     """
-    Protocol for executing media downloads.
-    Implementations should be reusable and stateless, or manage state internally.
+    Protocol for orchestrating media downloads.
     """
 
     def execute(self, target: str, options: DownloadOptions) -> DownloadResult:
@@ -94,28 +99,10 @@ class Downloader(Protocol):
         """
 
     def cancel(self) -> None:
-        """Cancel the currently running download (if any)."""
+        """Cancel the currently running download."""
 
     def pause(self) -> None:
-        """Pause the currently running download (if supported)."""
+        """Pause the currently running download."""
 
     def resume(self) -> None:
-        """Resume a paused download (if supported)."""
-
-    @property
-    def status(self) -> DownloadStatus:
-        """Current status of the ongoing download, or `PENDING` if none."""
-
-    @property
-    def progress_reporter(self) -> Optional[ProgressReporter]:
-        """Get the current progress reporter, if any."""
-
-    @progress_reporter.setter
-    def progress_reporter(self, reporter: Optional[ProgressReporter]) -> None:
-        """Attach a progress reporter to receive updates."""
-
-    def __enter__(self) -> "Downloader":
-        """Context manager entry – for resource setup."""
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Context manager exit – for cleanup."""
+        """Resume a paused download."""

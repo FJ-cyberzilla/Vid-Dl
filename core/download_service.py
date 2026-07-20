@@ -2,7 +2,7 @@
 
 import os
 import logging
-import time
+import threading
 from typing import List, Optional
 
 from core.protocols import (
@@ -39,7 +39,8 @@ class DownloadService:
         self.default_options = default_options or DownloadOptions()
         self.progress_reporter = progress_reporter
         self._cancelled = False
-        self._paused = False
+        self._pause_event = threading.Event()
+        self._pause_event.set()  # Set means "not paused"
         self._current_task_id: Optional[TaskID] = None
         self._results: List[DownloadResult] = []
 
@@ -63,7 +64,7 @@ class DownloadService:
             List of DownloadResult for each processed URL.
         """
         self._cancelled = False
-        self._paused = False
+        self._pause_event.set()
         self._results = []
 
         opts = options or self.default_options
@@ -83,20 +84,28 @@ class DownloadService:
                 logger.info("Batch cancelled by user.")
                 break
 
-            while self._paused:
-                # Busy‑wait or sleep; in a real app you'd use an event or condition
-                time.sleep(0.1)
+            # Handle pause
+            if not self._pause_event.is_set():
+                self._pause_event.wait()
                 if self._cancelled:
                     break
 
             logger.info("Downloading [%d/%d]: %s", idx, len(urls), url)
             try:
                 result = self.downloader.execute(url, opts)
-            except Exception as e:
-                logger.exception("Unexpected error downloading %s", url)
+            except (ValueError, TypeError) as e:
+                # Catch configuration or type errors
+                logger.exception("Configuration error downloading %s", url)
                 result = DownloadResult(
                     status=DownloadStatus.FAILED,
-                    error=str(e),
+                    error=f"Config error: {e}",
+                )
+            except Exception as e:
+                # Keep broad catch only for truly unexpected system failures, logged properly
+                logger.exception("Unexpected system error downloading %s", url)
+                result = DownloadResult(
+                    status=DownloadStatus.FAILED,
+                    error=f"Unexpected error: {e}",
                 )
 
             self._results.append(result)
@@ -124,17 +133,18 @@ class DownloadService:
     def cancel(self) -> None:
         """Cancel the current batch operation."""
         self._cancelled = True
+        self._pause_event.set() # Unpause to allow downstream cancellation
         # Also cancel the underlying download if possible
         if hasattr(self.downloader, "cancel"):
             self.downloader.cancel()
 
     def pause(self) -> None:
         """Pause the current batch (after the current download finishes)."""
-        self._paused = True
+        self._pause_event.clear()
 
     def resume(self) -> None:
         """Resume a paused batch."""
-        self._paused = False
+        self._pause_event.set()
 
     def _resolve_targets(self, target: str) -> List[str]:
         """Return a list of URLs from a single target or batch file."""
@@ -163,11 +173,3 @@ class DownloadService:
     def results(self) -> List[DownloadResult]:
         """Return the results of the last batch."""
         return self._results.copy()
-
-    @property
-    def is_cancelled(self) -> bool:
-        return self._cancelled
-
-    @property
-    def is_paused(self) -> bool:
-        return self._paused
