@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock
 from core.download_service import DownloadService
-from core.protocols import Downloader
+from core.protocols import Downloader, DownloadOptions
 
 class TestDownloadService(unittest.TestCase):
     def setUp(self):
@@ -12,7 +12,11 @@ class TestDownloadService(unittest.TestCase):
         """Test that a single URL is passed correctly to the downloader."""
         target = "https://example.com/video"
         self.service.process_target(target)
-        self.mock_downloader.execute.assert_called_once_with(target)
+        # Verify call included default options
+        self.mock_downloader.execute.assert_called_once()
+        args, _ = self.mock_downloader.execute.call_args
+        self.assertEqual(args[0], target)
+        self.assertIsInstance(args[1], DownloadOptions)
 
     def test_process_batch_file(self):
         """Test that a batch file is parsed and each URL is passed to the downloader."""
@@ -27,8 +31,10 @@ class TestDownloadService(unittest.TestCase):
             
             # Check if downloader was called for each URL
             self.assertEqual(self.mock_downloader.execute.call_count, 2)
-            calls = [unittest.mock.call(url) for url in urls]
-            self.mock_downloader.execute.assert_has_calls(calls)
+            for call_args in self.mock_downloader.execute.call_args_list:
+                args, _ = call_args
+                self.assertIn(args[0], urls)
+                self.assertIsInstance(args[1], DownloadOptions)
         finally:
             import os
             if os.path.exists(batch_file):

@@ -4,10 +4,12 @@ import os
 import logging
 import time
 from typing import Optional
+from pathlib import Path
 
 import yt_dlp
 
 from config.colors import THEME
+from config.settings import COOKIES_PATH
 from ui.progress_bars import get_sota_progress
 from core.protocols import (
     ProgressReporter,
@@ -80,34 +82,7 @@ class SOTADownloadManager(Downloader):
                 total=None,
             )
 
-            try:
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    ydl.download([target])
-
-                # If we get here, download succeeded
-                self._status = DownloadStatus.COMPLETED
-                result = DownloadResult(
-                    status=DownloadStatus.COMPLETED,
-                    file_path=self._guess_output_path(target, opts),
-                    metadata={"target": target},
-                )
-
-            except yt_dlp.utils.DownloadError as e:
-                logger.error("yt-dlp download error for %s: %s", target, str(e))
-                self._status = DownloadStatus.FAILED
-                result = DownloadResult(
-                    status=DownloadStatus.FAILED,
-                    error=str(e),
-                    metadata={"target": target},
-                )
-            except Exception as e:
-                logger.exception("Unexpected error downloading %s", target)
-                self._status = DownloadStatus.FAILED
-                result = DownloadResult(
-                    status=DownloadStatus.FAILED,
-                    error=f"Unexpected error: {e}",
-                    metadata={"target": target},
-                )
+            result = self._perform_download(target, ydl_opts, opts)
 
             # Finalise progress task
             progress.update(
@@ -119,7 +94,46 @@ class SOTADownloadManager(Downloader):
             progress.remove_task(self._current_task_id)
 
         self._last_result = result
+        self._status = result.status
         return result
+
+    def _perform_download(self, target: str, ydl_opts: dict, opts: DownloadOptions) -> DownloadResult:
+        """Helper to execute download, with fallback logic."""
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([target])
+            
+            return DownloadResult(
+                status=DownloadStatus.COMPLETED,
+                file_path=self._guess_output_path(target, opts),
+                metadata={"target": target},
+            )
+        except yt_dlp.utils.DownloadError as e:
+            if "Requested format is not available" in str(e):
+                logger.warning("Format not available for %s. Retrying with 'best' format.", target)
+                ydl_opts["format"] = "best"
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    ydl.download([target])
+                
+                return DownloadResult(
+                    status=DownloadStatus.COMPLETED,
+                    file_path=self._guess_output_path(target, opts),
+                    metadata={"target": target, "fallback": True},
+                )
+            
+            logger.error("yt-dlp download error for %s: %s", target, str(e))
+            return DownloadResult(
+                status=DownloadStatus.FAILED,
+                error=str(e),
+                metadata={"target": target},
+            )
+        except Exception as e:
+            logger.exception("Unexpected error downloading %s", target)
+            return DownloadResult(
+                status=DownloadStatus.FAILED,
+                error=f"Unexpected error: {e}",
+                metadata={"target": target},
+            )
 
     def cancel(self) -> None:
         """Cancel the currently running download."""
@@ -183,9 +197,14 @@ class SOTADownloadManager(Downloader):
         }
 
         # Check for cookies file to prevent non-existent path warnings
-        # (exactly as in the original code)
-        if os.path.exists("cookies.txt") and os.path.getsize("cookies.txt") > 0:
-            ydl_opts["cookiefile"] = "cookies.txt"
+        # Use provided cookiefile or fall back to COOKIES_PATH from settings
+        cookie_source = options.cookiefile or COOKIES_PATH
+        if cookie_source and os.path.exists(cookie_source) and os.path.getsize(cookie_source) > 0:
+            ydl_opts["cookiefile"] = str(Path(cookie_source).absolute())
+            logger.info("Using cookie file: %s", ydl_opts["cookiefile"])
+        elif options.cookiefile:
+             # If specifically requested but missing, we should probably warn
+             logger.warning("Requested cookie file %s not found.", options.cookiefile)
 
         # Overwrite?
         if options.overwrite:

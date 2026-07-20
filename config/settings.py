@@ -24,6 +24,16 @@ else:
 # ---- Cache for writability checks ----
 _WRITABLE_CACHE: Dict[Path, bool] = {}
 
+# ---- Cookies ----
+# Default to 'cookies.txt' in the project root (relative to this file's parent's parent)
+DEFAULT_COOKIES = Path(__file__).parent.parent / "cookies.txt"
+COOKIES_ENV_OVERRIDE = os.getenv("SOTA_COOKIES")
+
+if COOKIES_ENV_OVERRIDE:
+    COOKIES_PATH = Path(COOKIES_ENV_OVERRIDE).expanduser().absolute()
+else:
+    COOKIES_PATH = DEFAULT_COOKIES.absolute()
+
 
 def _is_writable(path: Path) -> bool:
     """

@@ -21,6 +21,8 @@ venv.bak/
 *.cookies
 *.part
 *.ytdl
+cookies.txt
+GEMINI.md
 
 # Downloaded Media
 *.mp4

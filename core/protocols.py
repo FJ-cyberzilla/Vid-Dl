@@ -25,6 +25,7 @@ class DownloadOptions:
     overwrite: bool = False
     retries: int = 3
     timeout: Optional[float] = 30.0
+    cookiefile: Optional[Path] = None
     extra_args: Dict[str, Any] = field(default_factory=dict)
 
 

@@ -6,11 +6,12 @@ SOTA (State of the Art) rejects the "bloatware" approach. By utilizing a clean, 
 
 * **Core:** `yt-dlp` (The industry standard for extraction)
 * **UI:** `rich` (For elegant, real-time terminal feedback)
-* **Design:** Decoupled UI, Service/Core Logic, and Configuration.
+* **Design:** Decoupled UI, Service/Core Logic, Repository/Adapter patterns, and Configuration.
 
 ## Key Features
 * **Structural Integrity:** Follows modern Python design patterns (SRP, DIP) for high testability.
 * **Orchestrated Workflows:** Uses a dedicated `DownloadService` to handle batch processing, decoupling it from the downloader engine.
+* **Robustness:** Implements automatic format fallback for unavailable requested qualities.
 * **Zero-Cookie OAuth:** Bypasses legacy login issues via external `cookies.txt` handling.
 * **Smart Routing:** Auto-detects Android storage vs. local Termux paths with side-effect-free path resolution.
 * **Dynamic Batching:** Supports single URLs, Playlists, and local `.txt` file parsing.
@@ -24,9 +25,10 @@ SOTA (State of the Art) rejects the "bloatware" approach. By utilizing a clean, 
 ## Usage
 * **Single URL:** Paste link when prompted.
 * **Batch/Playlist:** Paste the URL or the full path to a `.txt` file containing links.
-* **Format:** Select resolution or bitrate from the interactive menu.
+* **Format:** Select resolution or bitrate from the interactive menu. In case of format unavailability, the system will automatically fall back to the best available quality.
 
 ## Developer Tips
 * **Extensibility:** The `core/protocols.py` defines clear interfaces, making it easy to swap backends or extend UI reporting.
+* **Architecture:** Infrastructure-specific logic (Repository/Adapter) is strictly separated into the `infrastructure/` directory.
 * **Batch Files (`learn.txt`):** Keep a text file in `~/Vid-Dl` with one URL per line. When prompted for a URL, simply type `learn.txt`.
 * **Custom Paths:** You can customize storage paths in `config/settings.py`. To include daily subfolders, inject logic into `get_download_path()`.

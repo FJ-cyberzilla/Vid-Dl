@@ -4,7 +4,7 @@ import os
 from urllib.parse import urlparse
 
 # Supported URL schemes (extend as needed)
-_SUPPORTED_SCHEMES = {"http", "https", "ftp", "magnet", "file"}
+_SUPPORTED_SCHEMES = {"http", "https", "magnet", "file"}
 
 # Case-insensitive batch file suffix
 _BATCH_SUFFIX = ".txt"
