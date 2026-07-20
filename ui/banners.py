@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 __version__ = "1.0.0"
 TAGLINE = "Zero-Cookie OAuth • Metadata • Dynamic Batches"
 
-# Mutable container for the console instance (avoids 'global' statement)
+# Mutable container for the console instance (avolus 'global' statement)
 _console_holder = [Console()]
 
 
@@ -26,6 +26,11 @@ def set_console(console: Console) -> None:
 def _console() -> Console:
     """Return the current console instance."""
     return _console_holder[0]
+
+
+def display_banner(clear: bool = True) -> None:
+    """Alias for render_main_banner."""
+    render_main_banner(clear)
 
 
 def render_main_banner(clear: bool = True) -> None:

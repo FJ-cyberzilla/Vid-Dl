@@ -8,11 +8,21 @@ from rich.prompt import Prompt
 import config.settings
 from config.colors import THEME, MUTED
 from config.settings import check_ffmpeg, get_download_path
-from core.download_manager import SOTADownloadManager
-from core.download_service import DownloadService
+# Import specific classes to avoid circular imports if possible
+# or re-order if necessary. The error suggests circularity between ui/menus <-> core/download_manager
+
 from core.protocols import DownloadOptions
 from utils.validators import is_valid_input
 from ui.banners import render_main_banner, print_error, print_success, console
+
+# Delayed imports to break circularity
+def _get_downloader_manager():
+    from core.download_manager import SOTADownloadManager
+    return SOTADownloadManager
+
+def _get_download_service():
+    from core.download_service import DownloadService
+    return DownloadService
 
 
 def _get_quality_choice(is_audio: bool) -> str:
@@ -126,6 +136,8 @@ def launch_command_center():
             timeout=30.0,
         )
 
+        SOTADownloadManager = _get_downloader_manager()
+        DownloadService = _get_download_service()
         manager = SOTADownloadManager()
         service = DownloadService(manager)
 

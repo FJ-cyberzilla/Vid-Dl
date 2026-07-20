@@ -2,6 +2,7 @@
 
 import os
 from urllib.parse import urlparse
+from typing import Any
 
 # Supported URL schemes (extend as needed)
 _SUPPORTED_SCHEMES = {"http", "https", "magnet", "file"}
@@ -59,3 +60,8 @@ def is_valid_input(target: str) -> bool:
 
     # For other schemes (http, https, ftp, magnet), require a non-empty netloc
     return bool(parsed.netloc)
+
+def validate_options(options: Any) -> bool:
+    """Validate download options."""
+    # Placeholder for actual validation logic if needed in the future
+    return hasattr(options, "output_dir")

@@ -4,8 +4,24 @@ import os
 import sys
 import subprocess
 import logging
+from urllib.parse import urlparse
+from pathlib import Path
+from config.settings import get_download_path as get_config_download_path
 
 logger = logging.getLogger(__name__)
+
+
+def validate_url(url: str) -> bool:
+    """Validate if the provided string is a valid URL."""
+    try:
+        result = urlparse(url)
+        return all([result.scheme, result.netloc])
+    except Exception:
+        return False
+
+def get_download_path() -> Path:
+    """Wrapper for config.settings.get_download_path."""
+    return get_config_download_path()
 
 
 def clear_screen() -> None:

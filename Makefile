@@ -1,49 +1,86 @@
-# SOTA Downloader Makefile (Orange theme)
-# FJ™ Cyberzilla Systems
+# SOTA Downloader — Makefile
+# FJ™ Cybertronic Systems
+# Refactored for cross‑platform robustness and modern tooling.
 
-ORANGE := \033[38;5;208m
-GREEN  := \033[32m
-NC     := \033[0m
+# ----- aesthetics -----
+BOLD   := $(shell tput bold 2>/dev/null || printf '')
+ORANGE := $(shell tput setaf 208 2>/dev/null || printf '')
+NC     := $(shell tput sgr0 2>/dev/null || printf '')
+# fallback if tput not available (e.g. minimal Termux)
+ifeq ($(ORANGE),)
+    ORANGE := \033[38;5;208m
+    NC     := \033[0m
+    BOLD   := \033[1m
+endif
 
-# Footer
-FOOTER_MSG = $(ORANGE)-- SOTA Downloader · FJ™ Cybertronic$(NC)
+APP    := $(ORANGE)$(BOLD)SOTA Downloader v2.0.0$(NC)
+BRAND  := $(ORANGE)$(BOLD)FJ™ Cybertronic Systems$(NC)
+FOOTER := $(ORANGE)--- $(APP) | $(BRAND) ---$(NC)
 
-.PHONY: help install diagnose clean lint format
+.DEFAULT_GOAL := help
+.PHONY: help install run diagnose lint format clean update test coverage build dev
 
+# ----- targets -----
 help: ## Show this help message
-	@printf "$(ORANGE)SOTA Commands:$(NC)\n"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "$(ORANGE)%-15s$(NC) %s\n", $$1, $$2}'
-	@printf "\n"
-	@printf "$(ORANGE)FJ™ Cyberzilla Systems — Professional Downloader$(NC)\n"
-	@printf "\n"
+	@printf "\n$(ORANGE)   ____  ____  ______    _    $(NC)\n"
+	@printf "$(ORANGE)  / ___|/ __ \|_   _ \  / \   $(NC)\n"
+	@printf "$(ORANGE)  \___ \| |  | || |_) |/ _ \  $(NC)\n"
+	@printf "$(ORANGE)   ___) | |__| ||  _ < / ___ \ $(NC)\n"
+	@printf "$(ORANGE)  |____/ \____/ |_| \_\_/   \_\$(NC)\n\n"
+	@printf "$(BOLD)$(APP)$(NC) by $(BRAND)\n\n"
+	@printf "$(ORANGE)Commands:$(NC)\n"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(ORANGE)%-12s$(NC) %s\n", $$1, $$2}'
+	@printf "\n$(FOOTER)\n"
 
-install: ## Install dependencies and project in editable mode
-	@printf "$(ORANGE)Installing SOTA Downloader...$(NC)\n"
-	pip install -r requirements.txt
-	pip install -e .
-	@printf "$(GREEN)✔ Installation complete.$(NC)\n"
-	@printf "$(FOOTER_MSG)\n"
+install: ## Install main dependencies (production)
+	@printf "$(ORANGE)Installing dependencies...$(NC)\n"
+	@uv sync --no-dev
+	@uv pip install -e .
+	@printf "$(ORANGE)✔ Production installation complete.$(NC)\n"
 
-diagnose: ## Run a system compatibility check
-	@printf "$(ORANGE)Checking dependencies...$(NC)\n"
-	@python3 -c "import yt_dlp, rich, mutagen; print('Dependencies: OK')"
-	@which ffmpeg || echo "FFMPEG NOT FOUND: Run 'pkg install ffmpeg'"
-	@printf "$(ORANGE)Checking Storage Access...$(NC)\n"
-	@ls -ld /storage/emulated/0/DCIM/SOTADownloader || echo "Storage directory not yet created."
-	@printf "$(GREEN)✔ Diagnosis complete.$(NC)\n"
-	@printf "$(FOOTER_MSG)\n"
+dev: ## Install with development extras
+	@printf "$(ORANGE)Installing development dependencies...$(NC)\n"
+	@uv sync
+	@uv pip install -e .
+	@printf "$(ORANGE)✔ Development installation complete.$(NC)\n"
 
-lint: ## Run pylint on the project
-	pylint --rcfile=.pylintrc .
-	@printf "$(FOOTER_MSG)\n"
+update: ## Update dependencies (uv lock --upgrade)
+	@printf "$(ORANGE)Updating locked dependencies...$(NC)\n"
+	@uv lock --upgrade
+	@uv sync
+	@printf "$(ORANGE)✔ Dependencies updated.$(NC)\n"
 
-format: ## Run black auto-formatter
-	black .
-	@printf "$(FOOTER_MSG)\n"
+run: ## Launch the application
+	@printf "$(ORANGE)Launching SOTA...$(NC)\n"
+	@uv run python main.py
 
-clean: ## Remove temporary cache and build files
-	find . -type d -name "__pycache__" -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
-	rm -rf build/ dist/ *.egg-info/
-	@printf "$(GREEN)✔ Cleaned project artifacts.$(NC)\n"
-	@printf "$(FOOTER_MSG)\n"
+diagnose: ## Run system compatibility check
+	@printf "$(ORANGE)Diagnosing environment...$(NC)\n"
+	@uv run python -c "import yt_dlp, rich, mutagen, pydantic, tenacity, psutil, requests; print('Python deps: OK')"
+	@command -v ffmpeg >/dev/null 2>&1 && echo "ffmpeg: found" || echo "$(ORANGE)⚠ FFmpeg not found!$(NC)"
+	@command -v aria2c >/dev/null 2>&1 && echo "aria2c: found" || echo "$(ORANGE)⚠ aria2c not found (optional)$(NC)"
+	@printf "$(ORANGE)Diagnosis complete.$(NC)\n"
+
+lint: ## Run ruff linter
+	@uv run ruff check .
+
+format: ## Run ruff formatter
+	@uv run ruff format .
+
+clean: ## Remove temporary files and caches
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null
+	@rm -rf build/ dist/ *.egg-info/ .ruff_cache/ .pytest_cache/ .mypy_cache/ htmlcov/
+	@printf "$(ORANGE)✔ Project cleaned.$(NC)\n"
+
+test: ## Run test suite with coverage
+	@uv run pytest --cov --cov-report=html --cov-report=term
+
+coverage: ## Open coverage report (default browser)
+	@printf "$(ORANGE)Opening coverage report...$(NC)\n"
+	@xdg-open htmlcov/index.html 2>/dev/null || open htmlcov/index.html 2>/dev/null || true
+
+build: ## Build distributable package
+	@printf "$(ORANGE)Building package...$(NC)\n"
+	@uv build
+	@printf "$(ORANGE)✔ Package built in dist/.$(NC)\n"
