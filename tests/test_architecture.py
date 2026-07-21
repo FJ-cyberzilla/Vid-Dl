@@ -72,9 +72,8 @@ class TestLayerDependencies(unittest.TestCase):
                         tree = ast.parse(f.read())
                         for node in ast.walk(tree):
                             if isinstance(node, ast.ImportFrom):
-                                if (
-                                    node.module
-                                    and node.module.startswith("infrastructure")
+                                if node.module and node.module.startswith(
+                                    "infrastructure"
                                 ):
                                     self.fail(
                                         f"Core module {file_path} illegally "
@@ -87,7 +86,6 @@ class TestLayerDependencies(unittest.TestCase):
                                             f"Core module {file_path} illegally "
                                             f"imports from infrastructure: {alias.name}"
                                         )
-
 
 
 if __name__ == "__main__":

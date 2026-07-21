@@ -1,0 +1,287 @@
+```html
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sota Vid-Dl - Architecture & Technical Documentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        orange: {
+                            500: '#f97316',
+                            600: '#ea580c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#0b0f17] text-slate-100 font-sans antialiased selection:bg-orange-500 selection:text-white pb-16">
+
+    <!-- Hero Header -->
+    <header class="relative overflow-hidden bg-gradient-to-b from-orange-950/30 to-[#0b0f17] border-b border-slate-800/80 py-12 px-6 text-center">
+        <div class="max-w-4xl mx-auto flex flex-col items-center">
+            
+            <!-- Logo Simulation without Background -->
+            <div class="relative w-32 h-32 mb-6 flex items-center justify-center">
+                <div class="absolute inset-0 bg-orange-500/10 blur-2xl rounded-full"></div>
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_10px_15px_rgba(249,115,22,0.3)] z-10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Stylized FJ Gold-Tone Monogram representation derived from uploaded logo -->
+                    <path d="M28 25H48V38H38V48H46V60H38V75H28V25Z" fill="url(#goldGrad)" />
+                    <path d="M52 25H72V35H62V48H72V75H62V55H58V75H52V25Z" fill="url(#goldGrad)" />
+                    <defs>
+                        <linearGradient id="goldGrad" x1="28" y1="25" x2="72" y2="75" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#FDE047"/>
+                            <stop offset="0.5" stop-color="#CA8A04"/>
+                            <stop offset="1" stop-color="#A16207"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-semibold uppercase tracking-widest mb-3">
+                <i class="fa-solid fa-microchip"></i> High-Performance Media Extractor
+            </div>
+
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2">
+                <span class="text-orange-500">Sota Vid-Dl</span>
+            </h1>
+            
+            <!-- Developer Tag -->
+            <div class="text-xs text-slate-400 font-mono tracking-wide mb-4">
+                Maintained by <span class="text-orange-400 font-bold">FJ-Cyberzilla</span>
+            </div>
+
+            <p class="text-slate-400 max-w-xl text-sm leading-relaxed">
+                A lightweight, modular, and resilient downloading ecosystem optimized for Termux and Android environments, engineered for maximum performance and surgical code maintainability.
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 md:px-6 mt-10 space-y-12">
+
+        <!-- Core Architectural Design -->
+        <section>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 rounded-lg bg-orange-500/20 text-orange-400">
+                    <i class="fa-solid fa-cubes text-lg"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white tracking-tight">Core Architecture Philosophy</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-xl hover:border-orange-500/40 transition-all">
+                    <div class="text-orange-400 font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-chess-rook"></i> Strategy Pattern
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Formalized <code class="text-orange-300 font-mono">DownloaderBackend</code> protocol ensuring support for multiple swappable and fallible backends.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-xl hover:border-orange-500/40 transition-all">
+                    <div class="text-orange-400 font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved"></i> Enterprise Resilience
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Exponential backoff retries via <code class="text-orange-300 font-mono">tenacity</code> and dynamic sequential backend failovers.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-xl hover:border-orange-500/40 transition-all">
+                    <div class="text-orange-400 font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-network-wired"></i> Composition
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Orchestration of lifecycle workflows (pause/resume/cancel) via <code class="text-orange-300 font-mono">DownloadController</code>.
+                    </p>
+                </div>
+
+                <div class="bg-slate-900/60 border border-slate-800 p-5 rounded-xl hover:border-orange-500/40 transition-all">
+                    <div class="text-orange-400 font-bold mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> Strict Validation
+                    </div>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Guaranteed runtime configuration integrity and payload sanitization utilizing robust <code class="text-orange-300 font-mono">pydantic</code> models.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Project Structure Tree -->
+        <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 md:p-8">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-lg bg-orange-500/20 text-orange-400">
+                        <i class="fa-solid fa-folder-tree text-lg"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white tracking-tight">Project Directory Layout</h2>
+                </div>
+                <span class="text-xs font-mono text-slate-500 bg-slate-950 px-3 py-1 rounded border border-slate-800">Tree Hierarchy</span>
+            </div>
+
+            <div class="bg-slate-950 p-5 rounded-xl border border-slate-800/80 overflow-x-auto font-mono text-xs text-slate-300 leading-relaxed">
+                <pre class="text-orange-400/90">├── <span class="text-slate-100">Makefile</span>
+├── <span class="text-slate-100">README.md</span>
+├── <span class="text-slate-100">composition_root.py</span>
+├── <span class="text-indigo-400">config</span>
+│   ├── __init__.py
+│   ├── colors.py
+│   └── settings.py
+├── <span class="text-slate-100">cookies.txt</span>
+├── <span class="text-indigo-400">core</span>
+│   ├── __init__.py
+│   ├── controller.py
+│   ├── download_manager.py
+│   ├── download_service.py
+│   ├── fallback.py
+│   └── protocols.py
+├── <span class="text-indigo-400">infrastructure</span>
+│   ├── __init__.py
+│   ├── <span class="text-indigo-300">adapters</span>
+│   │   ├── __init__.py
+│   │   └── yt_dlp.py
+│   ├── aria2c.py
+│   ├── errors.py
+│   ├── ffmpeg.py
+│   ├── file_system.py
+│   ├── network.py
+│   ├── pybalt.py
+│   ├── pywidevine.py
+│   ├── system.py
+│   ├── videodl.py
+│   └── yt_dlp_wrapper.py
+├── <span class="text-slate-100">main.py</span>
+├── <span class="text-slate-100">plan1.txt</span>
+├── <span class="text-slate-100">pyproject.toml</span>
+├── <span class="text-slate-100">structure.mmf</span>
+├── <span class="text-slate-100">test_output</span>
+├── <span class="text-indigo-400">tests</span>
+│   ├── test_architecture.py
+│   ├── test_controller.py
+│   ├── test_download_manager.py
+│   ├── test_download_service.py
+│   ├── test_file_system.py
+│   ├── test_network.py
+│   ├── test_sota.py
+│   ├── test_system.py
+│   └── test_yt_dlp_wrapper.py
+├── <span class="text-indigo-400">ui</span>
+│   ├── __init__.py
+│   ├── banners.py
+│   ├── menus.py
+│   └── progress_bars.py
+├── <span class="text-indigo-400">utils</span>
+│   ├── __init__.py
+│   ├── helpers.py
+│   └── validators.py
+└── <span class="text-slate-100">uv.lock</span></pre>
+            </div>
+        </section>
+
+        <!-- Key Features Grid -->
+        <section>
+            <div class="flex items-center gap-3 mb-6">
+                <div class="p-2 rounded-lg bg-orange-500/20 text-orange-400">
+                    <i class="fa-solid fa-bolt text-lg"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white tracking-tight">System Feature Matrix</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-orange-400 font-bold text-sm mb-1"><i class="fa-solid fa-shield-cat mr-2"></i> Zero-Cookie OAuth</div>
+                    <p class="text-xs text-slate-400">Bypasses login roadblocks natively via explicit external <code class="text-orange-300">cookies.txt</code> ingestion.</p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-orange-400 font-bold text-sm mb-1"><i class="fa-solid fa-route mr-2"></i> Smart Routing</div>
+                    <p class="text-xs text-slate-400">Side-effect-free path resolution distinguishing Android shared storage from Termux directories.</p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-orange-400 font-bold text-sm mb-1"><i class="fa-solid fa-list-check mr-2"></i> Dynamic Batching</div>
+                    <p class="text-xs text-slate-400">Seamless parsing of single URLs, full playlists, and local batch text files.</p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-orange-400 font-bold text-sm mb-1"><i class="fa-solid fa-eye-slash mr-2"></i> Safe Dry Run</div>
+                    <p class="text-xs text-slate-400">Toggleable simulation mode for validating regex and path routing without altering filesystem.</p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-orange-400 font-bold text-sm mb-1"><i class="fa-solid fa-rotate-right mr-2"></i> Auto-Fallback</div>
+                    <p class="text-xs text-slate-400">Automatic fallback to best available quality if selected target stream resolution fails.</p>
+                </div>
+
+                <div class="bg-slate-900/40 border border-slate-800 p-4 rounded-xl">
+                    <div class="text-orange-400 font-bold text-sm mb-1"><i class="fa-solid fa-terminal mr-2"></i> Termux Optimized</div>
+                    <p class="text-xs text-slate-400">Lightweight binary footprint designed explicitly for high stability on mobile OS platforms.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Setup & Usage Pipeline -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section class="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="p-2 rounded-lg bg-emerald-500/20 text-emerald-400">
+                        <i class="fa-solid fa-code text-lg"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">Installation Workflow</h3>
+                </div>
+                <ol class="space-y-3 text-xs text-slate-300 list-decimal list-inside font-mono">
+                    <li class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                        pkg install ffmpeg python
+                    </li>
+                    <li class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                        pip install -e .
+                    </li>
+                    <li class="bg-slate-950 p-2.5 rounded border border-slate-800">
+                        sota
+                    </li>
+                </ol>
+            </section>
+
+            <section class="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="p-2 rounded-lg bg-blue-500/20 text-blue-400">
+                        <i class="fa-solid fa-lightbulb text-lg"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">Developer Shortcuts</h3>
+                </div>
+                <ul class="space-y-3 text-xs text-slate-300">
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-check text-orange-400 mt-0.5"></i>
+                        <span><strong>Batch Shortcut:</strong> Type <code class="text-orange-300 font-mono">learn.txt</code> when prompted to read links from your batch list in <code class="text-slate-200">~/Vid-Dl</code>.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-check text-orange-400 mt-0.5"></i>
+                        <span><strong>Extensibility:</strong> Implement protocols in <code class="text-orange-300 font-mono">core/protocols.py</code> and bind new backends inside <code class="text-slate-200">core/download_manager.py</code>.</span>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Footer Branding -->
+    <footer class="mt-16 text-center border-t border-slate-900 pt-8 px-4">
+        <div class="text-sm font-semibold tracking-wide text-slate-400">
+            Engineered by <span class="text-orange-400">FJ-Cyberzilla</span> &bull; 
+            <span class="text-white">FJ™ Cybertronic Systems</span>
+        </div>
+        <p class="text-xs text-slate-600 mt-2">Sota Vid-Dl Documentation Infographic &bull; All Rights Reserved</p>
+    </footer>
+
+</body>
+</html>
+
+```

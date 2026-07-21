@@ -5,13 +5,20 @@
 # ----- aesthetics -----
 BOLD   := $(shell tput bold 2>/dev/null || printf '')
 ORANGE := $(shell tput setaf 208 2>/dev/null || printf '')
+GREEN  := $(shell tput setaf 2 2>/dev/null || printf '')
+RED    := $(shell tput setaf 1 2>/dev/null || printf '')
+YELLOW := $(shell tput setaf 3 2>/dev/null || printf '')
 NC     := $(shell tput sgr0 2>/dev/null || printf '')
 # fallback if tput not available (e.g. minimal Termux)
 ifeq ($(ORANGE),)
-    ORANGE := \033[38;5;208m
+    ORANGE := \033[33m
     NC     := \033[0m
     BOLD   := \033[1m
+    GREEN  := \033[32m
+    RED    := \033[31m
+    YELLOW := \033[33m
 endif
+CHECK := ✔
 
 APP    := $(ORANGE)$(BOLD)SOTA Vid-Dl v3.0.1$(NC)
 BRAND  := $(ORANGE)$(BOLD)FJ™ Cyberzilla$(NC)
@@ -59,9 +66,10 @@ run: ## Launch the application
 
 diagnose: ## Run system compatibility check
 	@printf "$(ORANGE)Diagnosing environment...$(NC)\n"
-	@uv run python -c "import yt_dlp, rich, mutagen, pydantic, tenacity, psutil, requests; print('Python deps: OK')"
-	@command -v ffmpeg >/dev/null 2>&1 && echo "ffmpeg: found" || echo "$(ORANGE)⚠ FFmpeg not found!$(NC)"
-	@command -v aria2c >/dev/null 2>&1 && echo "aria2c: found" || echo "$(ORANGE)⚠ aria2c not found (optional)$(NC)"
+	@uv run python -c "import yt_dlp, rich, mutagen, pydantic, tenacity, requests; print('Python deps: $(GREEN)$(CHECK) OK$(NC)')"
+	@uv run python -c "import importlib.util; print('psutil (optional): ' + ('$(GREEN)$(CHECK) found$(NC)' if importlib.util.find_spec('psutil') else '$(RED)not found$(NC) $(YELLOW)(graceful fallback)$(NC)'))"
+	@command -v ffmpeg >/dev/null 2>&1 && printf "ffmpeg: $(GREEN)$(CHECK) found$(NC)\n" || printf "ffmpeg: $(RED)not found!$(NC)\n"
+	@command -v aria2c >/dev/null 2>&1 && printf "aria2c: $(GREEN)$(CHECK) found$(NC)\n" || printf "aria2c: $(RED)not found$(NC) $(YELLOW)(optional)$(NC)\n"
 	@printf "$(ORANGE)Diagnosis complete.$(NC)\n"
 
 lint: ## Run ruff linter
@@ -79,9 +87,14 @@ test: ## Run test suite with coverage
 	@printf "$(ORANGE)Running tests...$(NC)\n"
 	@PYTHONPATH=. uv run pytest --cov --cov-report=html --cov-report=term
 
-coverage: ## Open coverage report (default browser)
-	@printf "$(ORANGE)Opening coverage report...$(NC)\n"
-	@xdg-open htmlcov/index.html 2>/dev/null || open htmlcov/index.html 2>/dev/null || true
+coverage: ## Show coverage summary in the terminal
+	@printf "$(ORANGE)--- Coverage Summary ---$(NC)\n"
+	@if [ -f htmlcov/index.html ]; then \
+		PYTHONPATH=. uv run pytest --cov --cov-report=term | tail -n 20; \
+		printf "\n$(ORANGE)Tip: For the full HTML report, check: $(NC)$(PWD)/htmlcov/index.html\n"; \
+	else \
+		printf "$(RED)Coverage report not found. Run 'make test' first.$(NC)\n"; \
+	fi
 
 build: ## Build distributable package
 	@printf "$(ORANGE)Building package...$(NC)\n"

@@ -98,8 +98,6 @@ def test_empty_batch_file_raises(service, tmp_path):
 def test_downloader_progress_reporter_init(mock_downloader):
     mock_reporter = MagicMock()
     mock_downloader.progress_reporter = None
-    DownloadService(
-        downloader=mock_downloader, progress_reporter=mock_reporter
-    )
+    DownloadService(downloader=mock_downloader, progress_reporter=mock_reporter)
 
     assert mock_downloader.progress_reporter == mock_reporter
