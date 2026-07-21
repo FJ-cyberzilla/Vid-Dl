@@ -1,4 +1,4 @@
-# Python artifacts
+# Python artifacts & Virtual Environments
 __pycache__/
 *.py[cod]
 *$py.class
@@ -15,7 +15,7 @@ venv.bak/
 .coverage
 *.pyc
 
-# yt-dlp Caches & Fragments
+# yt-dlp Caches, Credentials & Fragments
 .yt-dlp/
 *.cookie
 *.cookies
@@ -23,13 +23,14 @@ venv.bak/
 *.ytdl
 cookies.txt
 
-# Downloaded Media
+# Downloaded Media & Test Outputs
 *.mp4
 *.mp3
 *.webm
 *.m4a
+test_output/
 
-# OS Files & Local Project Files
+# OS Files & Local Project / AI Files
 .DS_Store
 Thumbs.db
 .gemini/
