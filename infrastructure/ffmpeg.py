@@ -1,4 +1,5 @@
 """State‑of‑the‑art FFmpeg media processing with async support and progress tracking."""
+
 from __future__ import annotations
 
 import asyncio
@@ -9,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
@@ -23,6 +25,7 @@ class FFmpegNotFoundError(FFmpegError):
 
 class FFmpegProcessError(FFmpegError):
     """FFmpeg process returned a non‑zero exit code."""
+
     def __init__(self, message: str, stderr: str = ""):
         super().__init__(message)
         self.stderr = stderr
@@ -36,6 +39,7 @@ class FFmpegTimeoutError(FFmpegError):
 # Progress parser for FFmpeg stderr
 # ---------------------------------------------------------------------------
 _FFMPEG_TIME_RE = re.compile(r"time=(\d{2}:\d{2}:\d{2}\.\d{2})")
+
 
 def _parse_time(line: str) -> float | None:
     """Extract current processing time in seconds from an ffmpeg stderr line."""
@@ -89,7 +93,8 @@ class FFmpegProcessor:
         """Verify that ffmpeg is callable (public for pre‑flight checks)."""
         try:
             subprocess_proc = await asyncio.create_subprocess_exec(
-                self.ffmpeg_path, "-version",
+                self.ffmpeg_path,
+                "-version",
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
             )
@@ -209,11 +214,15 @@ class FFmpegProcessor:
 
         args = [
             self.ffmpeg_path,
-            "-i", str(video_path),
-            "-i", str(audio_path),
-            "-c", "copy",
+            "-i",
+            str(video_path),
+            "-i",
+            str(audio_path),
+            "-c",
+            "copy",
             "-y",
-            "-progress", "pipe:2",   # ensure time= lines appear on stderr
+            "-progress",
+            "pipe:2",  # ensure time= lines appear on stderr
             str(output_path),
         ]
 
@@ -247,9 +256,12 @@ class FFmpegProcessor:
 
         args = [
             self.ffmpeg_path,
-            "-i", str(video_path),
-            "-ss", timestamp,
-            "-vframes", "1",
+            "-i",
+            str(video_path),
+            "-ss",
+            timestamp,
+            "-vframes",
+            "1",
             "-y",
             str(output_path),
         ]
@@ -271,7 +283,9 @@ class FFmpegProcessor:
         """Synchronous version of :meth:`merge_audio_video`."""
         return asyncio.run(
             self.merge_audio_video(
-                video_path, audio_path, output_path,
+                video_path,
+                audio_path,
+                output_path,
                 progress_callback=progress_callback,
                 timeout=timeout,
             )
@@ -288,7 +302,9 @@ class FFmpegProcessor:
         """Synchronous version of :meth:`extract_thumbnail`."""
         return asyncio.run(
             self.extract_thumbnail(
-                video_path, output_path, timestamp,
+                video_path,
+                output_path,
+                timestamp,
                 timeout=timeout,
             )
         )

@@ -1,4 +1,5 @@
 """yt‑dlp integration wrapper – robust, async‑ready, with progress & error handling."""
+
 from __future__ import annotations
 
 import asyncio
@@ -6,12 +7,25 @@ import logging
 import shutil
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 import yt_dlp
 from yt_dlp.utils import DownloadError
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# TypedDict for yt-dlp hooks
+# ---------------------------------------------------------------------------
+class ProgressDict(TypedDict, total=False):
+    status: str
+    filename: str
+    total_bytes: int
+    total_bytes_estimate: int
+    downloaded_bytes: int
+    # Add other fields as needed based on yt-dlp documentation
+
 
 # ---------------------------------------------------------------------------
 # Custom exception
@@ -19,25 +33,14 @@ logger = logging.getLogger(__name__)
 class YtDlpError(Exception):
     """Raised when a yt‑dlp operation fails."""
 
+
 # ---------------------------------------------------------------------------
 # Engine
 # ---------------------------------------------------------------------------
 class YtDlpEngine:
     """
     An enhanced wrapper around yt‑dlp.
-
-    Parameters:
-        use_aria2c: If ``True``, use aria2c as external downloader when available.
-        output_template: Default output filename template (yt‑dlp syntax).
-        default_timeout: Optional timeout in seconds for downloads (applied in
-            the async path via :func:`asyncio.wait_for`).
-
-    Usage::
-
-        engine = YtDlpEngine()
-        path = engine.download("https://...", Path("./videos"))
-        # or async:
-        path = await engine.download_async("https://...", Path("./videos"))
+    ...
     """
 
     def __init__(
@@ -77,10 +80,12 @@ class YtDlpEngine:
             "no_warnings": True,
         }
         if self.use_aria2c:
-            opts.update({
-                "external_downloader": "aria2c",
-                "external_downloader_args": ["-x", "16", "-k", "1M"],
-            })
+            opts.update(
+                {
+                    "external_downloader": "aria2c",
+                    "external_downloader_args": ["-x", "16", "-k", "1M"],
+                }
+            )
         if extra_opts:
             opts.update(extra_opts)
         return opts
@@ -93,7 +98,7 @@ class YtDlpEngine:
         url: str,
         output_dir: Path,
         *,
-        progress_callback: Callable[[dict[str, Any]], Any] | None = None,
+        progress_callback: Callable[[ProgressDict], Any] | None = None,
         extra_opts: dict[str, Any] | None = None,
     ) -> Path:
         """
@@ -114,7 +119,7 @@ class YtDlpEngine:
         output_dir.mkdir(parents=True, exist_ok=True)
         final_path: Path | None = None
 
-        def _progress_hook(d: dict[str, Any]) -> None:
+        def _progress_hook(d: ProgressDict) -> None:
             nonlocal final_path
             # yt‑dlp passes a 'status' key: 'downloading', 'finished', etc.
             if d.get("status") == "finished" and "filename" in d:

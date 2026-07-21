@@ -12,6 +12,7 @@ from rich.progress import (
     TransferSpeedColumn,
 )
 from config.colors import THEME, ACCENT, MUTED
+import contextlib
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,8 @@ def get_sota_progress() -> Progress:
     logger.debug("Creating main SOTA progress bar.")
     _PROGRESS_HOLDER[0] = Progress(
         TextColumn(
-            f"[{THEME}]Downloading [white]>[/] [bold {ACCENT}][progress.description]%(task_description)s[/]"
+            f"[{THEME}]Downloading [white]>[/] "
+            f"[bold {ACCENT}][progress.description]%(task_description)s[/]"
         ),
         BarColumn(
             bar_width=35,
@@ -76,9 +78,7 @@ def reset_progress() -> None:
     """
     if _PROGRESS_HOLDER[0] is not None:
         # Optionally clean up the existing instance
-        try:
+        with contextlib.suppress(Exception):
             _PROGRESS_HOLDER[0].__exit__(None, None, None)
-        except Exception:
-            pass
         _PROGRESS_HOLDER[0] = None
         logger.debug("Progress instance reset.")

@@ -1,4 +1,5 @@
 """SOTA infrastructure exceptions – structured, loggable, and context‑rich."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -25,9 +26,7 @@ class InfrastructureError(Exception):
     def __str__(self) -> str:
         base = self.message
         if self.details:
-            details_str = ", ".join(
-                f"{k}={v}" for k, v in self.details.items()
-            )
+            details_str = ", ".join(f"{k}={v}" for k, v in self.details.items())
             return f"{base} [{details_str}]"
         return base
 

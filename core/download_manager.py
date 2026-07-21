@@ -1,8 +1,8 @@
 """Core yt-dlp execution and configuration module."""
 
+from pathlib import Path
 import os
 import logging
-from typing import Optional
 
 from config.colors import THEME
 from ui.progress_bars import get_sota_progress
@@ -13,7 +13,6 @@ from core.protocols import (
     DownloadResult,
     DownloadStatus,
 )
-from core.adapters import YtDlpBackend
 from core.controller import DownloadController
 from core.fallback import FallbackDownloader
 
@@ -29,24 +28,26 @@ class SOTADownloadManager(Downloader):
 
     def __init__(
         self,
-        default_options: Optional[DownloadOptions] = None,
-        progress_reporter: Optional[ProgressReporter] = None,
+        downloader: FallbackDownloader,
+        controller: DownloadController,
+        default_options: DownloadOptions | None = None,
     ):
         """
         Args:
+            downloader: FallbackDownloader instance.
+            controller: DownloadController instance.
             default_options: Default download options.
-            progress_reporter: UI progress reporter.
         """
         self.default_options = default_options or DownloadOptions()
-        # Dependency Injection: FallbackDownloader with YtDlpBackend
-        self.downloader = FallbackDownloader(backends=[YtDlpBackend()])
-        self.controller = DownloadController(progress_reporter=progress_reporter or get_sota_progress())
-        self._last_result: Optional[DownloadResult] = None
+        # Dependency Injection
+        self.downloader = downloader
+        self.controller = controller
+        self._last_result: DownloadResult | None = None
 
-        os.makedirs(self.default_options.output_dir, exist_ok=True)
+        self.default_options.output_dir.mkdir(parents=True, exist_ok=True)
 
     def execute(
-        self, target: str, options: Optional[DownloadOptions] = None
+        self, target: str, options: DownloadOptions | None = None
     ) -> DownloadResult:
         """
         Execute a download with the given target URL and options.
@@ -78,7 +79,10 @@ class SOTADownloadManager(Downloader):
                 progress.update(
                     self.controller.current_task_id,
                     completed=100,
-                    description=f"{'✔' if result.status == DownloadStatus.COMPLETED else '✘'} {target[:40]}",
+                    description=(
+                        f"{'✔' if result.status == DownloadStatus.COMPLETED else '✘'} "
+                        f"{target[:40]}"
+                    ),
                     status=result.status.value,
                 )
                 progress.remove_task(self.controller.current_task_id)
@@ -104,11 +108,11 @@ class SOTADownloadManager(Downloader):
         return self.controller.status
 
     @property
-    def progress_reporter(self) -> Optional[ProgressReporter]:
+    def progress_reporter(self) -> ProgressReporter | None:
         return self.controller.progress_reporter
 
     @progress_reporter.setter
-    def progress_reporter(self, reporter: Optional[ProgressReporter]) -> None:
+    def progress_reporter(self, reporter: ProgressReporter | None) -> None:
         self.controller.progress_reporter = reporter or get_sota_progress()
 
     def __enter__(self) -> "SOTADownloadManager":
@@ -124,7 +128,7 @@ class SOTADownloadManager(Downloader):
         yt‑dlp progress hook that updates the Rich progress bar.
         """
         self.controller.check_state()
-        
+
         if self.controller.current_task_id is None:
             return
 
@@ -133,7 +137,7 @@ class SOTADownloadManager(Downloader):
             total = d.get("total_bytes") or d.get("total_bytes_estimate") or 0
             downloaded = d.get("downloaded_bytes", 0)
             filename = d.get("filename", "Media File")
-            clean_title = os.path.basename(filename).rsplit(".", 1)[0][:40]
+            clean_title = Path(filename).stem.rsplit(".", 1)[0][:40]
 
             self.controller.progress_reporter.update(
                 self.controller.current_task_id,
@@ -151,5 +155,5 @@ class SOTADownloadManager(Downloader):
             )
 
     @property
-    def last_result(self) -> Optional[DownloadResult]:
+    def last_result(self) -> DownloadResult | None:
         return self._last_result

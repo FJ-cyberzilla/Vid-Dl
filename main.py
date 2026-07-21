@@ -41,3 +41,7 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# Alias for console script compatibility
+main_menu = main

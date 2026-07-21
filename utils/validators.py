@@ -1,6 +1,7 @@
 """Input validation handlers."""
 
 import os
+from pathlib import Path
 from urllib.parse import urlparse
 from typing import Any
 
@@ -18,7 +19,7 @@ def _is_valid_file_url(path: str) -> bool:
     """
     if os.name == "nt" and path.startswith("/"):
         path = path[1:]  # strip leading slash on Windows
-    return path.lower().endswith(_BATCH_SUFFIX) and os.path.isfile(path)
+    return path.lower().endswith(_BATCH_SUFFIX) and Path(path).is_file()
 
 
 def is_valid_input(target: str) -> bool:
@@ -45,10 +46,7 @@ def is_valid_input(target: str) -> bool:
         return True
 
     # URL validation
-    try:
-        parsed = urlparse(target)
-    except Exception:
-        return False
+    parsed = urlparse(target)
 
     # Must have a scheme and it must be supported
     if not parsed.scheme or parsed.scheme not in _SUPPORTED_SCHEMES:
@@ -60,6 +58,7 @@ def is_valid_input(target: str) -> bool:
 
     # For other schemes (http, https, ftp, magnet), require a non-empty netloc
     return bool(parsed.netloc)
+
 
 def validate_options(options: Any) -> bool:
     """Validate download options."""

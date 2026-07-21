@@ -1,4 +1,5 @@
 """State‑of‑the‑art aria2c external downloader with async, progress, and retries."""
+
 from __future__ import annotations
 
 import asyncio
@@ -11,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
@@ -25,6 +27,7 @@ class Aria2cNotFoundError(Aria2cError):
 
 class Aria2cProcessError(Aria2cError):
     """aria2c returned a non‑zero exit code."""
+
     def __init__(self, message: str, stderr: str = ""):
         super().__init__(message)
         self.stderr = stderr
@@ -38,6 +41,7 @@ class Aria2cTimeoutError(Aria2cError):
 # Progress parser
 # ---------------------------------------------------------------------------
 _ARIA2_PROGRESS_RE = re.compile(r"\((\d+)%\)")  # e.g., "(25%)"
+
 
 def _parse_progress(line: str) -> float | None:
     """Extract download percentage from an aria2c status line."""
@@ -62,6 +66,7 @@ class Aria2cOptions:
         progress_callback: Called with a percentage (0‑100) as download advances.
         headers: Extra HTTP headers as a dict.
     """
+
     max_connections: int = 16
     chunk_size: str = "1M"
     timeout: float | None = None
@@ -132,8 +137,8 @@ class Aria2cClient:
         """Build the aria2c command line."""
         cmd = [
             "aria2c",
-            "--summary-interval=0",          # suppress periodic summary
-            "--console-log-level=notice",    # show progress on stderr
+            "--summary-interval=0",  # suppress periodic summary
+            "--console-log-level=notice",  # show progress on stderr
             f"--max-connection-per-server={options.max_connections}",
             f"--min-split-size={options.chunk_size}",
             f"--out={output_path.name}",
@@ -157,9 +162,7 @@ class Aria2cClient:
         Execute aria2c asynchronously, parse progress, handle timeout/retries.
         """
         timeout = (
-            options.timeout
-            if options.timeout is not None
-            else self.default_timeout
+            options.timeout if options.timeout is not None else self.default_timeout
         )
 
         for attempt in range(1, options.retries + 1):

@@ -1,7 +1,10 @@
 import unittest
+import ast
+import os
 from unittest.mock import MagicMock
 from core.download_service import DownloadService
 from core.protocols import Downloader, DownloadOptions
+
 
 class TestDownloadService(unittest.TestCase):
     def setUp(self):
@@ -25,10 +28,10 @@ class TestDownloadService(unittest.TestCase):
         urls = ["https://url1.com", "https://url2.com"]
         with open(batch_file, "w", encoding="utf-8") as f:
             f.write("\n".join(urls))
-        
+
         try:
             self.service.process_target(batch_file)
-            
+
             # Check if downloader was called for each URL
             self.assertEqual(self.mock_downloader.execute.call_count, 2)
             for call_args in self.mock_downloader.execute.call_args_list:
@@ -37,6 +40,7 @@ class TestDownloadService(unittest.TestCase):
                 self.assertIsInstance(args[1], DownloadOptions)
         finally:
             import os
+
             if os.path.exists(batch_file):
                 os.remove(batch_file)
 
@@ -45,14 +49,46 @@ class TestDownloadService(unittest.TestCase):
         batch_file = "empty_batch.txt"
         with open(batch_file, "w", encoding="utf-8") as f:
             f.write("")
-        
+
         try:
             with self.assertRaises(ValueError):
                 self.service.process_target(batch_file)
         finally:
             import os
+
             if os.path.exists(batch_file):
                 os.remove(batch_file)
+
+
+class TestLayerDependencies(unittest.TestCase):
+    def test_core_does_not_import_infrastructure(self):
+        """Enforce that core does not directly import from infrastructure."""
+        core_dir = "core"
+        for root, _, files in os.walk(core_dir):
+            for file in files:
+                if file.endswith(".py"):
+                    file_path = os.path.join(root, file)
+                    with open(file_path, encoding="utf-8") as f:
+                        tree = ast.parse(f.read())
+                        for node in ast.walk(tree):
+                            if isinstance(node, ast.ImportFrom):
+                                if (
+                                    node.module
+                                    and node.module.startswith("infrastructure")
+                                ):
+                                    self.fail(
+                                        f"Core module {file_path} illegally "
+                                        f"imports from infrastructure: {node.module}"
+                                    )
+                            elif isinstance(node, ast.Import):
+                                for alias in node.names:
+                                    if alias.name.startswith("infrastructure"):
+                                        self.fail(
+                                            f"Core module {file_path} illegally "
+                                            f"imports from infrastructure: {alias.name}"
+                                        )
+
+
 
 if __name__ == "__main__":
     unittest.main()

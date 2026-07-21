@@ -1,4 +1,5 @@
 """State‑of‑the‑art filesystem operations with async support and error handling."""
+
 from __future__ import annotations
 
 import asyncio
@@ -8,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
@@ -48,9 +50,7 @@ class FileSystemManager:
             temp_dir: Root for all temporary files/dirs. Defaults to
                       ``<system temp>/video_downloader``.
         """
-        self.temp_dir = temp_dir or (
-            Path(tempfile.gettempdir()) / "video_downloader"
-        )
+        self.temp_dir = temp_dir or (Path(tempfile.gettempdir()) / "video_downloader")
         self.temp_dir.mkdir(parents=True, exist_ok=True)
 
     # ------------------------------------------------------------------
@@ -71,9 +71,7 @@ class FileSystemManager:
             logger.debug("Created temp file: %s", path)
             return path
         except OSError as exc:
-            raise FileSystemError(
-                f"Failed to create temporary file: {exc}"
-            ) from exc
+            raise FileSystemError(f"Failed to create temporary file: {exc}") from exc
 
     def create_temp_dir(self, prefix: str = "tmp") -> Path:
         """
@@ -107,9 +105,7 @@ class FileSystemManager:
                 shutil.rmtree(path)
                 logger.debug("Removed directory: %s", path)
         except OSError as exc:
-            raise FileSystemError(
-                f"Failed to clean up {path}: {exc}"
-            ) from exc
+            raise FileSystemError(f"Failed to clean up {path}: {exc}") from exc
 
     def cleanup_temp_dir(self) -> None:
         """Remove the entire temporary directory and its contents."""
@@ -118,9 +114,7 @@ class FileSystemManager:
     # ------------------------------------------------------------------
     # Disk space
     # ------------------------------------------------------------------
-    def get_disk_usage(
-        self, path: Path | None = None
-    ) -> dict[str, int]:
+    def get_disk_usage(self, path: Path | None = None) -> dict[str, int]:
         """
         Return disk usage for *path* (default: temp_dir) as bytes.
 
@@ -164,9 +158,7 @@ class FileSystemManager:
         """
         if not self.ensure_free_space(required_mb, path):
             target = path or self.temp_dir
-            free_mb = (
-                self.get_disk_usage(target)["free"] // (1024 * 1024)
-            )
+            free_mb = self.get_disk_usage(target)["free"] // (1024 * 1024)
             raise InsufficientSpaceError(
                 f"Not enough disk space on {target}: "
                 f"need {required_mb} MB, free {free_mb} MB"
@@ -237,13 +229,9 @@ class FileSystemManager:
 
     async def cleanup_async(self, path: Path) -> None:
         """Async version of :meth:`cleanup`."""
-        await asyncio.get_running_loop().run_in_executor(
-            None, self.cleanup, path
-        )
+        await asyncio.get_running_loop().run_in_executor(None, self.cleanup, path)
 
-    async def get_disk_usage_async(
-        self, path: Path | None = None
-    ) -> dict[str, int]:
+    async def get_disk_usage_async(self, path: Path | None = None) -> dict[str, int]:
         """Async version of :meth:`get_disk_usage`."""
         return await asyncio.get_running_loop().run_in_executor(
             None, self.get_disk_usage, path

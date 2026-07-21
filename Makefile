@@ -13,8 +13,8 @@ ifeq ($(ORANGE),)
     BOLD   := \033[1m
 endif
 
-APP    := $(ORANGE)$(BOLD)SOTA Downloader v2.0.0$(NC)
-BRAND  := $(ORANGE)$(BOLD)FJ™ Cybertronic Systems$(NC)
+APP    := $(ORANGE)$(BOLD)SOTA Vid-Dl v3.0.1$(NC)
+BRAND  := $(ORANGE)$(BOLD)FJ™ Cyberzilla$(NC)
 FOOTER := $(ORANGE)--- $(APP) | $(BRAND) ---$(NC)
 
 .DEFAULT_GOAL := help
@@ -22,12 +22,14 @@ FOOTER := $(ORANGE)--- $(APP) | $(BRAND) ---$(NC)
 
 # ----- targets -----
 help: ## Show this help message
-	@printf "\n$(ORANGE)   ____  ____  ______    _    $(NC)\n"
-	@printf "$(ORANGE)  / ___|/ __ \|_   _ \  / \   $(NC)\n"
-	@printf "$(ORANGE)  \___ \| |  | || |_) |/ _ \  $(NC)\n"
-	@printf "$(ORANGE)   ___) | |__| ||  _ < / ___ \ $(NC)\n"
-	@printf "$(ORANGE)  |____/ \____/ |_| \_\_/   \_\$(NC)\n\n"
-	@printf "$(BOLD)$(APP)$(NC) by $(BRAND)\n\n"
+	@printf "\n$(ORANGE)  ____   ___  _____    __     ___  ____   ____  _     $(NC)\n"
+	@printf "$(ORANGE) / ___| / _ \|_   _|   \ \   / (_)|  _ \ |  _ \| |    $(NC)\n"
+	@printf "$(ORANGE) \___ \| | | | | |      \ \ / /| || | | || | | | |    $(NC)\n"
+	@printf "$(ORANGE)  ___) | |_| | | |       \ V / | || |_| || |_| | |___ $(NC)\n"
+	@printf "$(ORANGE) |____/ \___/  |_|        \_/  |_||____/ |____/|_____|$(NC)\n\n"
+	@printf "$(ORANGE)----------------------------------------------------------------------------------$(NC)\n"
+	@printf "$(BOLD)$(APP)$(NC) $(ORANGE)$(BOLD)by FJ™ Cyberzilla Systems MMXXVI$(NC)\n"
+	@printf "$(ORANGE)----------------------------------------------------------------------------------$(NC)\n\n"
 	@printf "$(ORANGE)Commands:$(NC)\n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(ORANGE)%-12s$(NC) %s\n", $$1, $$2}'
@@ -74,7 +76,8 @@ clean: ## Remove temporary files and caches
 	@printf "$(ORANGE)✔ Project cleaned.$(NC)\n"
 
 test: ## Run test suite with coverage
-	@uv run pytest --cov --cov-report=html --cov-report=term
+	@printf "$(ORANGE)Running tests...$(NC)\n"
+	@PYTHONPATH=. uv run pytest --cov --cov-report=html --cov-report=term
 
 coverage: ## Open coverage report (default browser)
 	@printf "$(ORANGE)Opening coverage report...$(NC)\n"

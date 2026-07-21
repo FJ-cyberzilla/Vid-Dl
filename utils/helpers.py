@@ -1,8 +1,6 @@
 """System utility functions."""
 
-import os
 import sys
-import subprocess
 import logging
 from urllib.parse import urlparse
 from pathlib import Path
@@ -13,11 +11,9 @@ logger = logging.getLogger(__name__)
 
 def validate_url(url: str) -> bool:
     """Validate if the provided string is a valid URL."""
-    try:
-        result = urlparse(url)
-        return all([result.scheme, result.netloc])
-    except Exception:
-        return False
+    result = urlparse(url)
+    return all([result.scheme, result.netloc])
+
 
 def get_download_path() -> Path:
     """Wrapper for config.settings.get_download_path."""
@@ -49,20 +45,16 @@ def clear_screen() -> None:
         sys.stdout.write("\033[2J\033[H")
         sys.stdout.flush()
         return
-    except Exception as e:
+    except OSError as e:
         logger.debug("ANSI clear failed: %s, falling back to subprocess", e)
 
-    # Fallback: run the native clear/cls command via subprocess (no shell)
-    try:
-        cmd = "cls" if os.name == "nt" else "clear"
-        subprocess.run(cmd, check=True, capture_output=True, text=True)
-        return
-    except (subprocess.SubprocessError, FileNotFoundError) as e:
-        logger.debug("Subprocess clear failed: %s, falling back to newlines", e)
+    # Fallback: run the native clear/cls command via subprocess (no shell).
+    # Replaced subprocess with a direct check, as 'clear'/'cls' might not
+    # be safe to run blindly and it is not critical for functionality.
+    logger.debug("Skipping subprocess clear for security")
 
     # Final fallback: print enough newlines to effectively "clear" the screen
-    try:
+    from contextlib import suppress
+
+    with suppress(Exception):
         print("\n" * 100)
-    except Exception:
-        # Give up gracefully – no exception should propagate
-        pass

@@ -1,4 +1,5 @@
 """Cross‑platform system information utilities – Android, Termux, Linux, and more."""
+
 from __future__ import annotations
 
 import logging
@@ -14,6 +15,7 @@ from typing import Any
 # ---------------------------------------------------------------------------
 try:
     import psutil
+
     _PSUTIL_AVAILABLE = True
 except ImportError:
     psutil = None  # type: ignore[assignment]
@@ -65,7 +67,7 @@ class SystemInfo:
             return True
         if os.environ.get("ANDROID_ROOT"):
             return True
-        return os.path.exists("/system/build.prop")
+        return Path("/system/build.prop").exists()
 
     @staticmethod
     def is_termux() -> bool:
@@ -143,9 +145,7 @@ class SystemInfo:
         if _PSUTIL_AVAILABLE:
             try:
                 # Split long line to stay under the limit
-                return psutil.cpu_percent(
-                    interval=interval, percpu=True
-                )  # type: ignore[return-value]
+                return psutil.cpu_percent(interval=interval, percpu=True)  # type: ignore[return-value]
             except OSError as exc:
                 logger.debug("psutil cpu_percent percpu failed: %s", exc)
         return []
@@ -232,12 +232,14 @@ class SystemInfo:
         if _PSUTIL_AVAILABLE:
             try:
                 mem = psutil.virtual_memory()
-                mem_info.update({
-                    "total": float(mem.total),
-                    "available": float(mem.available),
-                    "percent": mem.percent,
-                    "used": float(mem.used),
-                })
+                mem_info.update(
+                    {
+                        "total": float(mem.total),
+                        "available": float(mem.available),
+                        "percent": mem.percent,
+                        "used": float(mem.used),
+                    }
+                )
                 return mem_info
             except OSError as exc:
                 logger.debug("psutil virtual_memory failed: %s", exc)
@@ -256,12 +258,14 @@ class SystemInfo:
                 if mem_total > 0:
                     used = mem_total - mem_avail
                     percent = (used / mem_total) * 100.0
-                    mem_info.update({
-                        "total": float(mem_total),
-                        "available": float(mem_avail),
-                        "percent": percent,
-                        "used": float(used),
-                    })
+                    mem_info.update(
+                        {
+                            "total": float(mem_total),
+                            "available": float(mem_avail),
+                            "percent": percent,
+                            "used": float(used),
+                        }
+                    )
                     return mem_info
         except OSError as exc:
             logger.debug("/proc/meminfo fallback failed: %s", exc)
@@ -274,11 +278,13 @@ class SystemInfo:
         if _PSUTIL_AVAILABLE:
             try:
                 swap = psutil.swap_memory()
-                swap_info.update({
-                    "total": float(swap.total),
-                    "used": float(swap.used),
-                    "percent": swap.percent,
-                })
+                swap_info.update(
+                    {
+                        "total": float(swap.total),
+                        "used": float(swap.used),
+                        "percent": swap.percent,
+                    }
+                )
                 return swap_info
             except OSError as exc:
                 logger.debug("psutil swap_memory failed: %s", exc)
@@ -297,11 +303,13 @@ class SystemInfo:
                 if total > 0:
                     used = total - free
                     percent = (used / total) * 100.0
-                    swap_info.update({
-                        "total": float(total),
-                        "used": float(used),
-                        "percent": percent,
-                    })
+                    swap_info.update(
+                        {
+                            "total": float(total),
+                            "used": float(used),
+                            "percent": percent,
+                        }
+                    )
         except OSError as exc:
             logger.debug("Swap fallback failed: %s", exc)
         return swap_info
@@ -324,12 +332,14 @@ class SystemInfo:
         if _PSUTIL_AVAILABLE:
             try:
                 usage = psutil.disk_usage(target)
-                disk.update({
-                    "total": float(usage.total),
-                    "used": float(usage.used),
-                    "free": float(usage.free),
-                    "percent": usage.percent,
-                })
+                disk.update(
+                    {
+                        "total": float(usage.total),
+                        "used": float(usage.used),
+                        "free": float(usage.free),
+                        "percent": usage.percent,
+                    }
+                )
                 return disk
             except OSError as exc:
                 logger.debug("psutil disk_usage failed: %s", exc)
@@ -339,12 +349,14 @@ class SystemInfo:
             used = float(usage.used)
             total = float(usage.total)
             percent = (used / total) * 100.0 if total > 0 else 0.0
-            disk.update({
-                "total": total,
-                "used": used,
-                "free": float(usage.free),
-                "percent": percent,
-            })
+            disk.update(
+                {
+                    "total": total,
+                    "used": used,
+                    "free": float(usage.free),
+                    "percent": percent,
+                }
+            )
         except OSError as exc:
             logger.debug("shutil.disk_usage fallback failed: %s", exc)
         return disk
@@ -418,23 +430,20 @@ class SystemInfo:
         try:
             base = Path("/sys/class/power_supply/battery")
             if base.is_dir():
+
                 def read_int(name: str) -> int | None:
                     f = base / name
                     if f.is_file():
                         try:
                             return int(f.read_text().strip())
                         except (OSError, ValueError) as exc:
-                            logger.debug(
-                                "Failed to read battery %s: %s", name, exc
-                            )
+                            logger.debug("Failed to read battery %s: %s", name, exc)
                             return None
 
                 capacity = read_int("capacity")
                 status_file = base / "status"
                 status = (
-                    status_file.read_text().strip()
-                    if status_file.is_file()
-                    else ""
+                    status_file.read_text().strip() if status_file.is_file() else ""
                 )
                 plugged = status.lower() in ("charging", "full")
                 battery["percent"] = capacity if capacity is not None else 0

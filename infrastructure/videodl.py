@@ -1,4 +1,5 @@
 """State‑of‑the‑art HTTP fallback downloader with retries, progress, async support."""
+
 from __future__ import annotations
 
 import asyncio
@@ -13,6 +14,7 @@ import requests
 from requests.exceptions import RequestException, Timeout as RequestsTimeout
 
 logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
@@ -47,8 +49,9 @@ class DownloadOptions:
         timeout: Request timeout in seconds (overrides the downloader's default).
         retries: Number of retries on transient errors (default 3).
     """
+
     progress_callback: Callable[[int, int | None], Any] | None = None
-    chunk_size: int = 8192       # 8 KiB
+    chunk_size: int = 8192  # 8 KiB
     timeout: float | None = None
     retries: int = 3
 
@@ -79,7 +82,7 @@ class VideoDLFallback:
         path = await dl.download_async(url, out)
     """
 
-    BACKOFF_FACTOR = 1.5          # multiplier between retries
+    BACKOFF_FACTOR = 1.5  # multiplier between retries
 
     def __init__(self, timeout: float = 30.0) -> None:
         """
@@ -155,7 +158,9 @@ class VideoDLFallback:
                 wait = self.BACKOFF_FACTOR ** (attempt - 1)
                 logger.warning(
                     "Download attempt %d failed: %s. Retrying in %.1fs...",
-                    attempt, exc, wait,
+                    attempt,
+                    exc,
+                    wait,
                 )
                 time.sleep(wait)
 
@@ -199,9 +204,7 @@ class VideoDLFallback:
                         if progress_callback:
                             progress_callback(downloaded, total_size_int)
         except OSError as exc:
-            raise FileWriteError(
-                f"Failed to write to {output_path}: {exc}"
-            ) from exc
+            raise FileWriteError(f"Failed to write to {output_path}: {exc}") from exc
 
         return output_path
 

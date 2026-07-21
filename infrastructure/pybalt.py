@@ -1,4 +1,5 @@
 """Social media extractor – robust, async‑ready, with pluggable backends."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
@@ -48,6 +50,7 @@ class ExtractOptions:
         quality: Preferred resolution, e.g., "720p", "best".
         extract_audio: If True, attempt to extract only the audio stream.
     """
+
     output_format: str = "mp4"
     progress_callback: Callable[[float], Any] | None = None
     headers: dict[str, str] = field(default_factory=dict)
@@ -133,9 +136,7 @@ class PyBaltEngine(SocialMediaExtractor):
         # import pybalt
         # with pybalt.Client(...) as client:
         #     client.download(url, str(output_path), ...)
-        raise NotImplementedError(
-            "Real PyBalt extraction logic not yet implemented."
-        )
+        raise NotImplementedError("Real PyBalt extraction logic not yet implemented.")
 
     # ------------------------------------------------------------------
     # Public interface

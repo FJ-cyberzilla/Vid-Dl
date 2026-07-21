@@ -1,4 +1,5 @@
 """Production‑ready network utilities with async support, speed tests, and retries."""
+
 from __future__ import annotations
 
 import asyncio
@@ -13,6 +14,7 @@ from requests.exceptions import RequestException
 from urllib3.util.retry import Retry
 
 logger = logging.getLogger(__name__)
+
 
 # ---------------------------------------------------------------------------
 # Custom exceptions
@@ -131,9 +133,7 @@ class NetworkManager:
             return False
 
         try:
-            resp = self.session.head(
-                url, timeout=self.timeout, allow_redirects=True
-            )
+            resp = self.session.head(url, timeout=self.timeout, allow_redirects=True)
             return resp.status_code < 400
         except RequestException:
             logger.debug("HEAD request failed for %s", url, exc_info=True)
@@ -197,9 +197,7 @@ class NetworkManager:
                     if elapsed >= duration:
                         break
         except RequestException as exc:
-            raise SpeedMeasurementError(
-                f"Speed test failed: {exc}"
-            ) from exc
+            raise SpeedMeasurementError(f"Speed test failed: {exc}") from exc
 
         elapsed_total = time.monotonic() - start_time
         if elapsed_total <= 0:

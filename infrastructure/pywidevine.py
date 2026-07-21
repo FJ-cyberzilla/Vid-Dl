@@ -1,4 +1,5 @@
 """DRM decryption service using pywidevine and video_download_drm."""
+
 from __future__ import annotations
 
 import asyncio
@@ -43,6 +44,7 @@ class DRMError(Exception):
 
 class DependencyMissingError(DRMError):
     """Raised when required DRM packages are not installed."""
+
     def __init__(self):
         super().__init__(
             "DRM support requires 'pywidevine' and 'video_download_drm'.\n"
@@ -158,7 +160,7 @@ class WidevineDRM(DRMService):
                         ) from e
             else:
                 downloader.run()
-        except Exception as e:
+        except (OSError, KeyError, AttributeError, ValueError) as e:
             raise DRMError(f"DRM decryption failed: {e}") from e
         finally:
             if progress_callback:

@@ -3,7 +3,7 @@
 import os
 import logging
 import threading
-from typing import List, Optional
+from pathlib import Path
 
 from core.protocols import (
     Downloader,
@@ -26,8 +26,8 @@ class DownloadService:
     def __init__(
         self,
         downloader: Downloader,
-        default_options: Optional[DownloadOptions] = None,
-        progress_reporter: Optional[ProgressReporter] = None,
+        default_options: DownloadOptions | None = None,
+        progress_reporter: ProgressReporter | None = None,
     ):
         """
         Args:
@@ -41,8 +41,8 @@ class DownloadService:
         self._cancelled = False
         self._pause_event = threading.Event()
         self._pause_event.set()  # Set means "not paused"
-        self._current_task_id: Optional[TaskID] = None
-        self._results: List[DownloadResult] = []
+        self._current_task_id: TaskID | None = None
+        self._results: list[DownloadResult] = []
 
         # Attach reporter to downloader if it supports it
         if hasattr(self.downloader, "progress_reporter"):
@@ -51,8 +51,8 @@ class DownloadService:
     def process_target(
         self,
         target: str,
-        options: Optional[DownloadOptions] = None,
-    ) -> List[DownloadResult]:
+        options: DownloadOptions | None = None,
+    ) -> list[DownloadResult]:
         """
         Process a target (single URL or batch file) and return results for each URL.
 
@@ -100,8 +100,8 @@ class DownloadService:
                     status=DownloadStatus.FAILED,
                     error=f"Config error: {e}",
                 )
-            except Exception as e:
-                # Keep broad catch only for truly unexpected system failures, logged properly
+            except (OSError, KeyError, AttributeError) as e:
+                # Catch unexpected system or parsing errors
                 logger.exception("Unexpected system error downloading %s", url)
                 result = DownloadResult(
                     status=DownloadStatus.FAILED,
@@ -133,7 +133,7 @@ class DownloadService:
     def cancel(self) -> None:
         """Cancel the current batch operation."""
         self._cancelled = True
-        self._pause_event.set() # Unpause to allow downstream cancellation
+        self._pause_event.set()  # Unpause to allow downstream cancellation
         # Also cancel the underlying download if possible
         if hasattr(self.downloader, "cancel"):
             self.downloader.cancel()
@@ -146,30 +146,30 @@ class DownloadService:
         """Resume a paused batch."""
         self._pause_event.set()
 
-    def _resolve_targets(self, target: str) -> List[str]:
+    def _resolve_targets(self, target: str) -> list[str]:
         """Return a list of URLs from a single target or batch file."""
         target = target.strip()
         if os.path.isfile(target) and target.lower().endswith((".txt", ".lst")):
             return self._parse_batch_file(target)
         return [target]
 
-    def _parse_batch_file(self, file_path: str) -> List[str]:
+    def _parse_batch_file(self, file_path: str) -> list[str]:
         """
         Parse a batch file, skipping empty lines and comments (#).
         """
         urls = []
-        with open(file_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
-                urls.append(line)
+        path = Path(file_path)
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            urls.append(line)
 
         if not urls:
             raise ValueError("Batch file contains no valid URLs.")
         return urls
 
     @property
-    def results(self) -> List[DownloadResult]:
+    def results(self) -> list[DownloadResult]:
         """Return the results of the last batch."""
         return self._results.copy()

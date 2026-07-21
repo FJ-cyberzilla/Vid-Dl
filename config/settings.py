@@ -5,24 +5,20 @@ import shutil
 import logging
 import subprocess
 from pathlib import Path
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
 # ---- Android defaults (keep as original) ----
 ANDROID_GALLERY_DIR = Path("/storage/emulated/0/DCIM/SOTADownloader")
-TERMUX_FALLBACK = Path(os.path.expanduser("~/downloads/SOTADownloader"))
+TERMUX_FALLBACK = Path("~").expanduser() / "downloads" / "SOTADownloader"
 LOCAL_FALLBACK = Path("./downloads").absolute()
 
 # ---- Environment override ----
 _ENV_OVERRIDE = os.getenv("SOTA_DOWNLOAD_DIR")
-if _ENV_OVERRIDE:
-    ENV_OVERRIDE = Path(_ENV_OVERRIDE).expanduser().absolute()
-else:
-    ENV_OVERRIDE = None
+ENV_OVERRIDE = Path(_ENV_OVERRIDE).expanduser().absolute() if _ENV_OVERRIDE else None
 
 # ---- Cache for writability checks ----
-_WRITABLE_CACHE: Dict[Path, bool] = {}
+_WRITABLE_CACHE: dict[Path, bool] = {}
 
 # ---- Cookies ----
 # Default to 'cookies.txt' in the project root (relative to this file's parent's parent)
@@ -74,10 +70,9 @@ def get_download_path() -> Path:
         )
 
     # Priority 1: Android Gallery
-    if ANDROID_GALLERY_DIR.parent.exists():  # check /storage/emulated/0/DCIM exists
-        if _is_writable(ANDROID_GALLERY_DIR):
-            logger.info("Using Android Gallery path: %s", ANDROID_GALLERY_DIR)
-            return ANDROID_GALLERY_DIR
+    if ANDROID_GALLERY_DIR.parent.exists() and _is_writable(ANDROID_GALLERY_DIR):
+        logger.info("Using Android Gallery path: %s", ANDROID_GALLERY_DIR)
+        return ANDROID_GALLERY_DIR
 
     # Priority 2: Termux fallback
     if _is_writable(TERMUX_FALLBACK):
@@ -105,7 +100,7 @@ def check_ffmpeg(version_check: bool = True) -> bool:
 
     # Optional: verify version ≥ 4.0 (which supports most features)
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             [ffmpeg_path, "-version"],
             capture_output=True,
             text=True,
@@ -123,6 +118,6 @@ def check_ffmpeg(version_check: bool = True) -> bool:
                 major = int(version_str.split(".")[0])
                 return major >= 4
         return True  # if we can't parse, assume OK
-    except Exception:
-        # If version check fails, still assume it's available
+    except (OSError, ValueError, IndexError, AttributeError):
+        # If version check fails or parsing fails, still assume it's available
         return True

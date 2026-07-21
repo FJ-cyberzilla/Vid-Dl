@@ -1,5 +1,5 @@
-import os
 import unittest
+from pathlib import Path
 from utils.validators import is_valid_input
 from config.settings import get_download_path
 
@@ -12,7 +12,7 @@ class TestSOTADownloader(unittest.TestCase):
             "http://youtu.be/dQw4w9WgXcQ",
             "https://vimeo.com/81234567",
             "http://localhost:8000/media",
-            "  https://youtube.com/watch?v=abcdef  "  # leading/trailing spaces
+            "  https://youtube.com/watch?v=abcdef  ",  # leading/trailing spaces
         ]
         for url in valid_urls:
             with self.subTest(url=url):
@@ -26,7 +26,7 @@ class TestSOTADownloader(unittest.TestCase):
             "http//missing-colon",
             "https://",
             "",
-            None
+            None,
         ]
         for url in invalid_urls:
             with self.subTest(url=url):
@@ -35,35 +35,33 @@ class TestSOTADownloader(unittest.TestCase):
     def test_is_valid_input_batch_files(self):
         """Test is_valid_input with local .txt files."""
         # Create a temporary txt file
-        temp_file = "test_batch_temp_file.txt"
-        with open(temp_file, "w", encoding="utf-8") as f:
-            f.write("https://example.com/video1\n")
+        temp_file = Path("test_batch_temp_file.txt")
+        temp_file.write_text("https://example.com/video1\n", encoding="utf-8")
 
         try:
-            self.assertTrue(is_valid_input(temp_file))
+            self.assertTrue(is_valid_input(str(temp_file)))
             self.assertTrue(is_valid_input(f"  {temp_file}  "))  # with spaces
             # Test a non-existent txt file
             self.assertFalse(is_valid_input("non_existent_file.txt"))
             # Test a non-txt file
             self.assertFalse(is_valid_input("main.py"))
         finally:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
+            if temp_file.exists():
+                temp_file.unlink()
 
     def test_get_download_path(self):
         """Test that get_download_path returns a valid writeable directory."""
         path = get_download_path()
         self.assertIsNotNone(path)
-        self.assertTrue(os.path.isdir(path))
+        self.assertTrue(path.is_dir())
         # Ensure we have write access in the resolved path
-        test_file = os.path.join(path, ".test_write_suite")
+        test_file = path / ".test_write_suite"
         try:
-            with open(test_file, "w", encoding="utf-8") as f:
-                f.write("test")
-            self.assertTrue(os.path.exists(test_file))
+            test_file.write_text("test", encoding="utf-8")
+            self.assertTrue(test_file.exists())
         finally:
-            if os.path.exists(test_file):
-                os.remove(test_file)
+            if test_file.exists():
+                test_file.unlink()
 
 
 if __name__ == "__main__":

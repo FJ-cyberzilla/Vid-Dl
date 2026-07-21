@@ -4,52 +4,57 @@ import sys
 from pathlib import Path
 
 from rich.prompt import Prompt
+from rich.panel import Panel
+from rich.table import Table
 
 import config.settings
-from config.colors import THEME, MUTED
+from config.colors import THEME, MUTED, ACCENT
 from config.settings import check_ffmpeg, get_download_path
 # Import specific classes to avoid circular imports if possible
-# or re-order if necessary. The error suggests circularity between ui/menus <-> core/download_manager
+# or re-order if necessary.
+# The error suggests circularity between ui/menus <-> core/download_manager
 
 from core.protocols import DownloadOptions
+from core.download_service import DownloadService
 from utils.validators import is_valid_input
 from ui.banners import render_main_banner, print_error, print_success, console
 
-# Delayed imports to break circularity
-def _get_downloader_manager():
-    from core.download_manager import SOTADownloadManager
-    return SOTADownloadManager
 
-def _get_download_service():
-    from core.download_service import DownloadService
-    return DownloadService
+# Factory to break circularity
+def _get_downloader_factory():
+    from composition_root import create_sota_manager
+
+    return create_sota_manager
 
 
 def _get_quality_choice(is_audio: bool) -> str:
     """
-    Prompt the user for quality selection and return the corresponding quality string.
+    Prompt the user for quality selection using a clean panel.
     """
     console.print("\n")
     if is_audio:
-        console.print(f"[{THEME}]1.[/] High (320kbps)")
-        console.print(f"[{THEME}]2.[/] Medium (192kbps)")
-        console.print(f"[{THEME}]3.[/] Low (128kbps)")
-        q_choice = Prompt.ask(
-            f"[{THEME}]Select Audio Quality[/]",
-            choices=["1", "2", "3"],
-            default="1",
+        options = (
+            f"[{THEME}]1.[/] High (320kbps)\n"
+            f"[{THEME}]2.[/] Medium (192kbps)\n"
+            f"[{THEME}]3.[/] Low (128kbps)"
         )
+        title = "Select Audio Quality"
         quality_map = {"1": "320", "2": "192", "3": "128"}
     else:
-        console.print(f"[{THEME}]1.[/] Maximum (1080p+)")
-        console.print(f"[{THEME}]2.[/] High (720p)")
-        console.print(f"[{THEME}]3.[/] Standard (480p)")
-        q_choice = Prompt.ask(
-            f"[{THEME}]Select Video Quality[/]",
-            choices=["1", "2", "3"],
-            default="1",
+        options = (
+            f"[{THEME}]1.[/] Maximum (1080p+)\n"
+            f"[{THEME}]2.[/] High (720p)\n"
+            f"[{THEME}]3.[/] Standard (480p)"
         )
+        title = "Select Video Quality"
         quality_map = {"1": "best", "2": "720", "3": "480"}
+
+    console.print(Panel(options, title=f"[bold]{title}[/]", border_style=THEME))
+    q_choice = Prompt.ask(
+        f"[{THEME}]Selection[/]",
+        choices=["1", "2", "3"],
+        default="1",
+    )
     return quality_map[q_choice]
 
 
@@ -66,14 +71,21 @@ def _handle_results(results, output_path: Path):
 
 
 def _handle_settings():
-    """Handle the settings menu."""
+    """Handle the settings menu with a clean panel."""
     while True:
-        console.print(f"\n[{THEME}]--- Settings ---[/]")
-        console.print(f"[{MUTED}]Current Cookies: {config.settings.COOKIES_PATH}[/]")
-        console.print(f"[{THEME}]1.[/] Update Cookies Path")
-        console.print(f"[{THEME}]2.[/] Back to Main Menu\n")
+        console.print(
+            Panel(
+                f"[dim]Cookies Path:[/dim] {config.settings.COOKIES_PATH}\n"
+                f"[dim]Download Path:[/dim] {config.settings.get_download_path()}\n\n"
+                f"[{THEME}]1.[/] Update Cookies Path\n"
+                f"[{THEME}]2.[/] Set Custom Download Path\n"
+                f"[{THEME}]3.[/] Back to Main Menu",
+                title="[bold]System Settings[/]",
+                border_style=THEME,
+            )
+        )
 
-        choice = Prompt.ask(f"[{THEME}]Select Option[/]", choices=["1", "2"])
+        choice = Prompt.ask(f"[{THEME}]Select Option[/]", choices=["1", "2", "3"])
         if choice == "1":
             new_path = Prompt.ask(f"[{THEME}]Enter new cookies.txt path[/]")
             if new_path:
@@ -83,6 +95,15 @@ def _handle_settings():
                     print_success(f"Cookies path updated to: {path}")
                 else:
                     print_error(f"File not found: {path}")
+        elif choice == "2":
+            new_path = Prompt.ask(f"[{THEME}]Enter custom download directory[/]")
+            if new_path:
+                path = Path(new_path).expanduser().absolute()
+                if config.settings._is_writable(path):
+                    config.settings.ENV_OVERRIDE = path
+                    print_success(f"Download path updated to: {path}")
+                else:
+                    print_error(f"Path is not writable: {path}")
         else:
             break
 
@@ -95,15 +116,41 @@ def launch_command_center():
         sys.exit(1)
 
     while True:
+        # ... inside launch_command_center ...
         render_main_banner()
         output_path = Path(get_download_path())
-        console.print(f"[{MUTED}]Storage Route: {output_path}[/]")
-        console.print(f"[{MUTED}]Cookies Route: {config.settings.COOKIES_PATH}[/]\n")
 
-        console.print(f"[{THEME}]1.[/] Download Video (MP4 / Playlist / Batch)")
-        console.print(f"[{THEME}]2.[/] Download Audio (MP3 / Playlist / Batch)")
-        console.print(f"[{THEME}]3.[/] System Settings")
-        console.print(f"[{THEME}]4.[/] Exit System\n")
+        # Dashboard layout: Info and Menu in a structured grid
+        dashboard = Table(box=None, expand=True, padding=(0, 0))
+        dashboard.add_column(justify="center")
+
+        # Display route information in a compact panel
+        info_panel = Panel(
+            f"[dim]Storage:[/dim] {output_path}\n"
+            f"[dim]Cookies:[/dim] {config.settings.COOKIES_PATH}",
+            border_style=MUTED,
+            padding=(0, 1),
+            title="[bold]Session Info[/]",
+        )
+
+        # Main Menu Panel
+        menu_items = (
+            f"[{ACCENT}]1.[/] [bold]Download Video[/] (MP4/Playlist)\n"
+            f"[{ACCENT}]2.[/] [bold]Download Audio[/] (MP3/Playlist)\n"
+            f"[{ACCENT}]3.[/] System Settings\n"
+            f"[{ACCENT}]4.[/] Exit System"
+        )
+        menu_panel = Panel(
+            menu_items,
+            title="[bold]Main Menu[/]",
+            border_style=THEME,
+            padding=(1, 2),
+        )
+
+        dashboard.add_row(info_panel)
+        dashboard.add_row(menu_panel)
+
+        console.print(dashboard)
 
         choice = Prompt.ask(f"[{THEME}]Select Action[/]", choices=["1", "2", "3", "4"])
 
@@ -136,9 +183,8 @@ def launch_command_center():
             timeout=30.0,
         )
 
-        SOTADownloadManager = _get_downloader_manager()
-        DownloadService = _get_download_service()
-        manager = SOTADownloadManager()
+        create_manager = _get_downloader_factory()
+        manager = create_manager()
         service = DownloadService(manager)
 
         try:
@@ -154,6 +200,11 @@ def launch_command_center():
             )
             input("\nPress Enter to continue...")
 
-        except Exception as e:
+        except (OSError, ValueError, AttributeError) as e:
             print_error(str(e))
             input("\nPress Enter to continue...")
+
+
+def main_menu():
+    """Main menu entry point - launches the command center."""
+    return launch_command_center()
