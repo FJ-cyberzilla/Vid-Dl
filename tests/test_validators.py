@@ -22,5 +22,6 @@ def test_is_valid_input_invalid() -> None:
 def test_validate_options() -> None:
     class Opts:
         output_dir = "/home/test"
+
     assert validate_options(Opts()) is True
     assert validate_options(object()) is False

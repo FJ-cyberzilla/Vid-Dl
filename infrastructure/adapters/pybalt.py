@@ -116,7 +116,7 @@ class PyBaltEngine(SocialMediaExtractor):
             pass
 
     # ------------------------------------------------------------------
-    # Core logic (placeholder)
+    # Core logic
     # ------------------------------------------------------------------
     def _extract_impl(
         self,
@@ -125,7 +125,7 @@ class PyBaltEngine(SocialMediaExtractor):
         _options: ExtractOptions,
     ) -> Path:
         """
-        Actual extraction logic. **Replace this with a real implementation.**
+        Actual extraction logic. Implementation pending.
         """
         if not self._pybalt_available:
             raise MissingDependencyError(
@@ -141,6 +141,32 @@ class PyBaltEngine(SocialMediaExtractor):
     # ------------------------------------------------------------------
     # Public interface
     # ------------------------------------------------------------------
+    def _attempt_extraction(
+        self,
+        url: str,
+        output_path: Path,
+        options: ExtractOptions,
+        attempt: int,
+    ) -> Path:
+        """Execute a single attempt."""
+        try:
+            return self._extract_impl(url, output_path, options)
+        except MissingDependencyError:
+            raise  # not transient
+        except ExtractionError as exc:
+            if attempt == options.retries:
+                raise
+            logger.warning(
+                "Extraction attempt %d failed: %s. Retrying...", attempt, exc
+            )
+            time.sleep(1.5 ** (attempt - 1))
+            raise  # Signal retry needed
+
+    def _validate_input(self, url: str) -> None:
+        """Validate input."""
+        if not isinstance(url, str) or not url.strip():
+            raise UnsupportedPlatformError("URL must be a non‑empty string.")
+
     def extract(
         self,
         url: str,
@@ -149,46 +175,17 @@ class PyBaltEngine(SocialMediaExtractor):
     ) -> Path:
         """
         Synchronously extract media from a social media URL.
-
-        Args:
-            url: The URL of the media post/page.
-            output_path: Destination file path (parent directories are created).
-            options: Extraction settings.
-
-        Returns:
-            The *output_path* where the media was saved.
-
-        Raises:
-            UnsupportedPlatformError: The URL is not recognised.
-            MissingDependencyError: PyBalt (or chosen backend) is not installed.
-            ExtractionTimeoutError: The operation timed out.
-            ExtractionError: Other extraction failures.
         """
-        if options is None:
-            options = ExtractOptions()
-
-        # Ensure output directory exists
+        options = options or ExtractOptions()
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        self._validate_input(url)
 
-        # Simple URL validation
-        if not isinstance(url, str) or not url.strip():
-            raise UnsupportedPlatformError("URL must be a non‑empty string.")
-
-        # Retry loop – only retry transient ExtractionErrors
         for attempt in range(1, options.retries + 1):
             try:
-                return self._extract_impl(url, output_path, options)
-            except MissingDependencyError:
-                raise  # not transient
-            except ExtractionError as exc:
+                return self._attempt_extraction(url, output_path, options, attempt)
+            except ExtractionError:
                 if attempt == options.retries:
                     raise
-                logger.warning(
-                    "Extraction attempt %d failed: %s. Retrying...", attempt, exc
-                )
-                time.sleep(1.5 ** (attempt - 1))
-
-        # Unreachable
         raise ExtractionError("Unexpected retry loop exit.")
 
     async def extract_async(

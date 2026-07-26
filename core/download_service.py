@@ -92,35 +92,47 @@ class DownloadService:
 
         return self._results
 
+    def _process_single_url(self, url: str, opts: DownloadOptions) -> DownloadResult:
+        """Execute single download for a URL."""
+        try:
+            return self.downloader.execute(url, opts)
+        except (ValueError, TypeError, OSError, KeyError, AttributeError) as e:
+            return self._handle_download_error(url, e)
+
     def _execute_download_loop(self, urls: list[str], opts: DownloadOptions) -> None:
         """Execute the download loop for a list of URLs."""
         for idx, url in enumerate(urls, start=1):
-            if self._cancelled:
-                logger.info("Batch cancelled by user.")
+            if self._check_cancellation():
                 break
 
-            # Handle pause
-            if not self._pause_event.is_set():
-                self._pause_event.wait()
-                if self._cancelled:
-                    break
+            self._check_pause()
 
             logger.info("Downloading [%d/%d]: %s", idx, len(urls), url)
-            try:
-                result = self.downloader.execute(url, opts)
-            except (ValueError, TypeError, OSError, KeyError, AttributeError) as e:
-                result = self._handle_download_error(url, e)
-
+            result = self._process_single_url(url, opts)
             self._results.append(result)
 
-            # Update progress
-            if self.progress_reporter and self._current_task_id is not None:
-                self.progress_reporter.advance(self._current_task_id, amount=1.0)
-                self.progress_reporter.update(
-                    self._current_task_id,
-                    description=f"Processed {idx}/{len(urls)} - last: {url}",
-                    status=result.status.value,
-                )
+            self._update_loop_progress(idx, len(urls), url, result)
+
+    def _check_cancellation(self) -> bool:
+        if self._cancelled:
+            logger.info("Batch cancelled by user.")
+            return True
+        return False
+
+    def _check_pause(self) -> None:
+        if not self._pause_event.is_set():
+            self._pause_event.wait()
+
+    def _update_loop_progress(
+        self, idx: int, total: int, url: str, result: DownloadResult
+    ) -> None:
+        if self.progress_reporter and self._current_task_id is not None:
+            self.progress_reporter.advance(self._current_task_id, amount=1.0)
+            self.progress_reporter.update(
+                self._current_task_id,
+                description=f"Processed {idx}/{total} - last: {url}",
+                status=result.status.value,
+            )
 
     def _handle_download_error(self, url: str, error: Exception) -> DownloadResult:
         """Handle errors during download."""

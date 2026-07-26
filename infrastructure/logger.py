@@ -7,13 +7,14 @@ import logging
 from dataclasses import dataclass
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from infrastructure.app_dirs import LOG_DIR
 
 
 @dataclass(slots=True, frozen=True)
 class LoggerConfig:
     """Configuration settings for structured file logging."""
 
-    log_file: Path = Path("logs/app.log")
+    log_file: Path = LOG_DIR / "app.log"
     max_bytes: int = 10 * 1024 * 1024  # 10 MB per log file
     backup_count: int = 5  # Retain up to 5 rotated files
     log_level: int = logging.INFO

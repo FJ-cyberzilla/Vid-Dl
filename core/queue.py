@@ -8,6 +8,7 @@ import asyncio
 from dataclasses import dataclass, field
 from enum import Enum, auto
 import time
+from typing import Any
 
 
 class QueueItemState(Enum):
@@ -53,11 +54,26 @@ class PriorityDownloadQueue:
     and event integration with EventBus.
     """
 
-    def __init__(self, event_bus: object | None = None) -> None:
+    def __init__(self, event_bus: object | None = None, repository: Any = None) -> None:
         self._queue: asyncio.PriorityQueue[PriorityItem] = asyncio.PriorityQueue()
         self._items: dict[str, DownloadQueueItem] = {}
         self._event_bus = event_bus
+        self._repository = repository
         self._lock = asyncio.Lock()
+        self._load_from_repository()
+
+    def _load_from_repository(self) -> None:
+        """Loads items from the repository if provided."""
+        if self._repository:
+            for item in self._repository.load_all():
+                self._items[item.item_id] = item
+                if item.state == QueueItemState.PENDING:
+                    priority_entry = PriorityItem(
+                        priority=item.priority,
+                        timestamp=item.created_at,
+                        item_id=item.item_id,
+                    )
+                    self._queue.put_nowait(priority_entry)
 
     @property
     def total_count(self) -> int:
@@ -101,6 +117,9 @@ class PriorityDownloadQueue:
             )
             self._items[item_id] = item
 
+            if self._repository:
+                self._repository.save_item(item)
+
             priority_entry = PriorityItem(
                 priority=priority, timestamp=item.created_at, item_id=item_id
             )
@@ -125,6 +144,8 @@ class PriorityDownloadQueue:
                     continue
 
                 item.state = QueueItemState.PROCESSING
+                if self._repository:
+                    self._repository.save_item(item)
 
             await self._notify_state_change(
                 item.item_id, QueueItemState.PROCESSING.name
@@ -147,6 +168,9 @@ class PriorityDownloadQueue:
             item.state = state
             if error_message:
                 item.error_message = error_message
+            
+            if self._repository:
+                self._repository.save_item(item)
 
         await self._notify_state_change(item_id, state.name, error_message or "")
 
@@ -161,6 +185,8 @@ class PriorityDownloadQueue:
                 return False
 
             item.state = QueueItemState.CANCELLED
+            if self._repository:
+                self._repository.save_item(item)
 
         await self._notify_state_change(item_id, QueueItemState.CANCELLED.name)
         return True

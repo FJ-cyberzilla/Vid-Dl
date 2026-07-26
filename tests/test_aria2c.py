@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, patch, MagicMock
-from infrastructure.aria2c import (
+from infrastructure.adapters.aria2c import (
     Aria2cClient,
     Aria2cOptions,
     Aria2cError,

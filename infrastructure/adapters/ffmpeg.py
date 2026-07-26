@@ -318,14 +318,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
     proc = FFmpegProcessor()
 
-    async def demo() -> None:
+    async def _check_via_test() -> None:
         """Run a quick verification that FFmpeg is reachable."""
         await proc.check_ffmpeg()
-        # Example usage (commented out to avoid actual file requirements):
-        # await proc.merge_audio_video(
-        #     Path("v.mp4"), Path("a.aac"), Path("out.mp4"),
-        #     progress_callback=lambda t: print(f"Time: {t:.1f}s")
-        # )
         print("FFmpegProcessor is ready.")
 
-    asyncio.run(demo())
+    asyncio.run(_check_via_test())

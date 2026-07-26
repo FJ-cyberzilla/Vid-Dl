@@ -129,6 +129,17 @@ class WidevineDRM(DRMService):
             self._cdm = _Cdm.from_device(self.device)
         return self._cdm
 
+    def _run_with_timeout(self, run_func: Callable[[], Any], timeout: float) -> None:
+        """Helper to run a function in a thread pool with a timeout."""
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(run_func)
+            try:
+                future.result(timeout=timeout)
+            except concurrent.futures.TimeoutError as e:
+                raise DRMError(
+                    f"DRM decryption timed out after {timeout} seconds"
+                ) from e
+
     def _run_download(
         self,
         url: str,
@@ -150,14 +161,7 @@ class WidevineDRM(DRMService):
 
         try:
             if timeout is not None:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(downloader.run)
-                    try:
-                        future.result(timeout=timeout)
-                    except concurrent.futures.TimeoutError as e:
-                        raise DRMError(
-                            f"DRM decryption timed out after {timeout} seconds"
-                        ) from e
+                self._run_with_timeout(downloader.run, timeout)
             else:
                 downloader.run()
         except (OSError, KeyError, AttributeError, ValueError) as e:
@@ -165,6 +169,13 @@ class WidevineDRM(DRMService):
         finally:
             if progress_callback:
                 progress_callback(100.0)
+
+    def _validate_url(self, url: str) -> None:
+        """Validate the manifest URL."""
+        if not isinstance(url, str) or not url.strip():
+            raise DRMError("URL must be a non‑empty string")
+        if not url.startswith(("http://", "https://")):
+            raise DRMError("URL must start with http:// or https://")
 
     def decrypt(
         self,
@@ -193,10 +204,7 @@ class WidevineDRM(DRMService):
             DRMError: If decryption fails or times out.
         """
         # Validate URL
-        if not isinstance(url, str) or not url.strip():
-            raise DRMError("URL must be a non‑empty string")
-        if not url.startswith(("http://", "https://")):
-            raise DRMError("URL must start with http:// or https://")
+        self._validate_url(url)
 
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)

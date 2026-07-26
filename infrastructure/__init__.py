@@ -6,15 +6,18 @@ from .errors import (
     NetworkError,
     DiskSpaceError,
 )
-from .yt_dlp_wrapper import YtDlpEngine
-from .aria2c import Aria2cClient
-from .ffmpeg import FFmpegProcessor
+from infrastructure.adapters import (
+    Aria2cClient,
+    FFmpegProcessor,
+    PyBaltEngine,
+    WidevineDRM,
+    VideoDLFallback,
+    YtDlpAdapter,
+)
+from infrastructure.adapters.yt_dlp import YtDlpEngine
 from .file_system import FileSystemManager
 from .network import NetworkManager
 from .system import SystemInfo
-from .videodl import VideoDLFallback
-from .pywidevine import WidevineDRM
-from .pybalt import PyBaltEngine
 
 __all__ = [
     "InfrastructureError",
@@ -23,13 +26,14 @@ __all__ = [
     "DRMError",
     "NetworkError",
     "DiskSpaceError",
-    "YtDlpEngine",
     "Aria2cClient",
     "FFmpegProcessor",
+    "PyBaltEngine",
+    "WidevineDRM",
+    "VideoDLFallback",
+    "YtDlpAdapter",
+    "YtDlpEngine",
     "FileSystemManager",
     "NetworkManager",
     "SystemInfo",
-    "VideoDLFallback",
-    "WidevineDRM",
-    "PyBaltEngine",
 ]

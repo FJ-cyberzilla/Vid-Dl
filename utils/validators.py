@@ -22,45 +22,31 @@ def _is_valid_file_url(path: str) -> bool:
     return path.lower().endswith(_BATCH_SUFFIX) and Path(path).is_file()
 
 
+def _is_valid_url(target: str) -> bool:
+    """Validate URL formats."""
+    parsed = urlparse(target)
+    if not parsed.scheme or parsed.scheme not in _SUPPORTED_SCHEMES:
+        return False
+    if parsed.scheme == "file":
+        return _is_valid_file_url(parsed.path)
+    return bool(parsed.netloc)
+
+
 def is_valid_input(target: str) -> bool:
     """
     Validate user input for downloading or batch processing.
-
-    Accepts:
-        - HTTP/HTTPS/FTP URLs (with scheme and netloc).
-        - Magnet links (magnet:?xt=...).
-        - Local batch files (.txt, case-insensitive) that exist on disk.
-        - file:// URLs pointing to existing .txt files.
-
-    Returns:
-        True if the input is considered valid, False otherwise.
     """
-    # Reject empty or whitespace-only input early
     if not target or not target.strip():
         return False
 
     target = target.strip()
 
-    # Batch file: local .txt file
     if target.lower().endswith(_BATCH_SUFFIX) and os.path.isfile(target):
         return True
 
-    # URL validation
-    parsed = urlparse(target)
-
-    # Must have a scheme and it must be supported
-    if not parsed.scheme or parsed.scheme not in _SUPPORTED_SCHEMES:
-        return False
-
-    # Special case: file:// – must point to a valid .txt file
-    if parsed.scheme == "file":
-        return _is_valid_file_url(parsed.path)
-
-    # For other schemes (http, https, ftp, magnet), require a non-empty netloc
-    return bool(parsed.netloc)
+    return _is_valid_url(target)
 
 
 def validate_options(options: Any) -> bool:
     """Validate download options."""
-    # Placeholder for actual validation logic if needed in the future
     return hasattr(options, "output_dir")

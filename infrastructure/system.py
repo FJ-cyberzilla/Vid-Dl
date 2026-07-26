@@ -54,18 +54,23 @@ class SystemInfo:
         return float(path.read_text().strip()) / 1000.0
 
     @staticmethod
+    def _parse_meminfo_line(line: str, results: dict[str, int]) -> None:
+        """Helper to parse a single line from /proc/meminfo."""
+        parts = line.split()
+        if not parts:
+            return
+        key = parts[0].replace(":", "")
+        if key in results:
+            results[key] = int(parts[1]) * 1024  # kB to bytes
+
+    @staticmethod
     def _parse_meminfo(keys: list[str]) -> dict[str, int]:
         """Parse /proc/meminfo for specified keys."""
         results = {key: 0 for key in keys}
         try:
             with open("/proc/meminfo", encoding="utf-8") as f:
                 for line in f:
-                    parts = line.split()
-                    if not parts:
-                        continue
-                    key = parts[0].replace(":", "")
-                    if key in results:
-                        results[key] = int(parts[1]) * 1024  # kB to bytes
+                    SystemInfo._parse_meminfo_line(line, results)
         except OSError as exc:
             logger.debug("/proc/meminfo read failed: %s", exc)
         return results
@@ -176,13 +181,22 @@ class SystemInfo:
         return []
 
     @staticmethod
-    def get_cpu_count() -> int:
-        """Return the number of logical CPUs."""
+    def _get_psutil_cpu_count(logical: bool = True) -> int | None:
+        """Get CPU count via psutil."""
         if _PSUTIL_AVAILABLE and psutil:
             try:
-                return int(psutil.cpu_count(logical=True) or 1)
+                return psutil.cpu_count(logical=logical)
             except OSError as exc:
                 logger.debug("psutil cpu_count failed: %s", exc)
+        return None
+
+    @staticmethod
+    def get_cpu_count() -> int:
+        """Return the number of logical CPUs."""
+        count = SystemInfo._get_psutil_cpu_count(logical=True)
+        if count is not None:
+            return int(count or 1)
+
         # Fallback: try os.cpu_count()
         try:
             return os.cpu_count() or 1
@@ -221,6 +235,18 @@ class SystemInfo:
         return {}
 
     @staticmethod
+    def _get_load_avg_fallback() -> tuple[float, float, float]:
+        """Read /proc/loadavg manually."""
+        try:
+            with open("/proc/loadavg", encoding="utf-8") as f:
+                parts = f.read().strip().split()
+                if len(parts) >= 3:
+                    return (float(parts[0]), float(parts[1]), float(parts[2]))
+        except OSError as exc:
+            logger.debug("/proc/loadavg read failed: %s", exc)
+        return (0.0, 0.0, 0.0)
+
+    @staticmethod
     def get_load_average() -> tuple[float, float, float]:
         """Return the 1, 5, 15 minute load averages (Linux/Android)."""
         if _PSUTIL_AVAILABLE and psutil and hasattr(psutil, "getloadavg"):
@@ -230,14 +256,7 @@ class SystemInfo:
             except (OSError, AttributeError, IndexError) as exc:
                 logger.debug("psutil getloadavg failed: %s", exc)
         # Fallback: read /proc/loadavg manually
-        try:
-            with open("/proc/loadavg", encoding="utf-8") as f:
-                parts = f.read().strip().split()
-                if len(parts) >= 3:
-                    return (float(parts[0]), float(parts[1]), float(parts[2]))
-        except OSError as exc:
-            logger.debug("/proc/loadavg read failed: %s", exc)
-        return (0.0, 0.0, 0.0)
+        return SystemInfo._get_load_avg_fallback()
 
     # ------------------------------------------------------------------
     # Memory
@@ -371,19 +390,50 @@ class SystemInfo:
     # Temperature
     # ------------------------------------------------------------------
     @staticmethod
+    def _extract_temp_from_sensors(
+        sensors: dict[str, Any], temps: dict[str, float]
+    ) -> None:
+        """Helper to extract temperatures from psutil sensors."""
+        for name, entries in sensors.items():
+            for entry in entries:
+                label = entry.label or name
+                temps[label] = entry.current
+
+    @staticmethod
     def _get_temperatures_via_psutil() -> dict[str, float]:
         """Gather temperatures using psutil."""
-        temps = {}
+        temps: dict[str, float] = {}
         if _PSUTIL_AVAILABLE:
             try:
                 sensors = psutil.sensors_temperatures()
-                for name, entries in sensors.items():
-                    for entry in entries:
-                        label = entry.label or name
-                        temps[label] = entry.current
+                SystemInfo._extract_temp_from_sensors(sensors, temps)
             except OSError as exc:
                 logger.debug("psutil sensors_temperatures failed: %s", exc)
         return temps
+
+    @staticmethod
+    def _parse_thermal_zone_file(
+        type_path: Path, temp_path: Path
+    ) -> tuple[str, float] | None:
+        """Read and parse type and temp files for a thermal zone."""
+        try:
+            type_name = type_path.read_text().strip()
+            temp = SystemInfo._read_temp_file(temp_path)
+            return type_name, temp
+        except (OSError, ValueError) as exc:
+            logger.debug("Could not read thermal zone paths: %s", exc)
+            return None
+
+    @staticmethod
+    def _process_thermal_zone(zone: Path) -> tuple[str, float] | None:
+        """Read and parse a single thermal zone."""
+        if not (zone.is_dir() and zone.name.startswith("thermal_zone")):
+            return None
+        type_path = zone / "type"
+        temp_path = zone / "temp"
+        if not (type_path.is_file() and temp_path.is_file()):
+            return None
+        return SystemInfo._parse_thermal_zone_file(type_path, temp_path)
 
     @staticmethod
     def _get_temperatures_via_thermal_zones() -> dict[str, float]:
@@ -395,17 +445,9 @@ class SystemInfo:
                 return temps
 
             for zone in base.iterdir():
-                if zone.is_dir() and zone.name.startswith("thermal_zone"):
-                    type_path = zone / "type"
-                    temp_path = zone / "temp"
-                    if type_path.is_file() and temp_path.is_file():
-                        try:
-                            type_name = type_path.read_text().strip()
-                            temps[type_name] = SystemInfo._read_temp_file(temp_path)
-                        except (OSError, ValueError) as exc:
-                            logger.debug(
-                                "Could not read thermal zone %s: %s", zone, exc
-                            )
+                result = SystemInfo._process_thermal_zone(zone)
+                if result:
+                    temps[result[0]] = result[1]
         except OSError as exc:
             logger.debug("Thermal zone lookup failed: %s", exc)
         return temps
@@ -427,6 +469,33 @@ class SystemInfo:
     # Battery
     # ------------------------------------------------------------------
     @staticmethod
+    def _get_battery_status_android(battery: dict[str, Any]) -> None:
+        """Android fallback: /sys/class/power_supply/battery."""
+        try:
+            base = Path("/sys/class/power_supply/battery")
+            if not base.is_dir():
+                return
+
+            def read_int(name: str) -> int | None:
+                f = base / name
+                if f.is_file():
+                    try:
+                        return int(f.read_text().strip())
+                    except (OSError, ValueError) as exc:
+                        logger.debug("Failed to read battery %s: %s", name, exc)
+                return None
+
+            capacity = read_int("capacity")
+            status_file = base / "status"
+            status = status_file.read_text().strip() if status_file.is_file() else ""
+            plugged = status.lower() in ("charging", "full")
+            battery["percent"] = capacity if capacity is not None else 0
+            battery["power_plugged"] = plugged
+            battery["secsleft"] = -1  # not easily available
+        except OSError as exc:
+            logger.debug("Battery fallback failed: %s", exc)
+
+    @staticmethod
     def get_battery_status() -> dict[str, Any]:
         """
         Return battery information (percent, power_plugged, time_left).
@@ -441,35 +510,11 @@ class SystemInfo:
                     battery["percent"] = bat.percent
                     battery["power_plugged"] = bat.power_plugged
                     battery["secsleft"] = bat.secsleft
-                    # Do not return early – just update battery and continue
             except OSError as exc:
                 logger.debug("psutil sensors_battery failed: %s", exc)
 
         # Android fallback: /sys/class/power_supply/battery
-        try:
-            base = Path("/sys/class/power_supply/battery")
-            if base.is_dir():
-
-                def read_int(name: str) -> int | None:
-                    f = base / name
-                    if f.is_file():
-                        try:
-                            return int(f.read_text().strip())
-                        except (OSError, ValueError) as exc:
-                            logger.debug("Failed to read battery %s: %s", name, exc)
-                    return None
-
-                capacity = read_int("capacity")
-                status_file = base / "status"
-                status = (
-                    status_file.read_text().strip() if status_file.is_file() else ""
-                )
-                plugged = status.lower() in ("charging", "full")
-                battery["percent"] = capacity if capacity is not None else 0
-                battery["power_plugged"] = plugged
-                battery["secsleft"] = -1  # not easily available
-        except OSError as exc:
-            logger.debug("Battery fallback failed: %s", exc)
+        SystemInfo._get_battery_status_android(battery)
 
         return battery
 

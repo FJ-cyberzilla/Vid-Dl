@@ -2,7 +2,7 @@ import pytest
 import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
-from infrastructure.ffmpeg import (
+from infrastructure.adapters.ffmpeg import (
     FFmpegProcessor,
     FFmpegError,
     FFmpegNotFoundError,

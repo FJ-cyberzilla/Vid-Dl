@@ -5,6 +5,7 @@ from UI updates.
 """
 
 import asyncio
+import inspect
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import TypeVar, cast
@@ -50,6 +51,11 @@ class DownloadStateChangedEvent(Event):
     error_message: str | None = None
 
 
+@dataclass(slots=True, frozen=True)
+class ShutdownEvent(Event):
+    """Event emitted when the application is shutting down."""
+
+
 class EventBus:
     """
     Central async event dispatcher for decoupling core events
@@ -79,22 +85,28 @@ class EventBus:
         if event_type in self._subscribers and handler in self._subscribers[event_type]:
             self._subscribers[event_type].remove(handler)
 
+    def _run_handler(
+        self, handler: EventHandler, event: Event
+    ) -> Awaitable[None] | None:
+        """Execute a single handler."""
+        try:
+            return handler(event)
+        except Exception:  # noqa: BLE001
+            # Logged via infrastructure logger in subscriber scope
+            return None
+
     async def publish(self, event: Event) -> None:
         """Publishes an event to all registered handlers concurrently."""
-        event_type = type(event)
-        handlers = self._subscribers.get(event_type, [])
+        handlers = self._subscribers.get(type(event), [])
         if not handlers:
             return
 
         async_tasks: list[Awaitable[None]] = []
 
         for handler in handlers:
-            try:
-                result = handler(event)
-                if asyncio.iscoroutine(result) or isinstance(result, asyncio.Future):
-                    async_tasks.append(result)
-            except Exception as exc:  # pylint: disable=broad-exception-caught
-                _ = exc  # Logged via infrastructure logger in subscriber scope
+            result = self._run_handler(handler, event)
+            if inspect.isawaitable(result):
+                async_tasks.append(result)
 
         if async_tasks:
             await asyncio.gather(*async_tasks, return_exceptions=True)

@@ -27,6 +27,9 @@ cookies.txt
 *.pem
 *.key
 .env
+*.wvd
+*.der
+client_id.bin
 
 # yt-dlp Caches, Fragments & Temporary Downloads
 .yt-dlp/
@@ -42,6 +45,7 @@ cookies.txt
 *.flac
 *.wav
 test_output/
+logs/
 
 # OS, IDE & AI Workspace Files
 .DS_Store

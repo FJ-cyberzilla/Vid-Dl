@@ -51,6 +51,17 @@ def _is_writable(path: Path) -> bool:
         return False
 
 
+def _find_writable_path(candidates: list[tuple[Path, str]]) -> Path | None:
+    """Find the first writable path from a list of candidates."""
+    for path, label in candidates:
+        if label == "Android Gallery" and not ANDROID_GALLERY_DIR.parent.exists():
+            continue
+        if _is_writable(path):
+            logger.info("Using %s download path: %s", label, path)
+            return path
+    return None
+
+
 def get_download_path() -> Path:
     """
     Resolve the safest accessible download path, with priority:
@@ -60,30 +71,35 @@ def get_download_path() -> Path:
         4. Local fallback (./downloads) – always falls back
     Returns an absolute Path; ensures the directory exists.
     """
-    # Priority 0: environment override
-    if ENV_OVERRIDE is not None:
-        if _is_writable(ENV_OVERRIDE):
-            logger.info("Using env override download path: %s", ENV_OVERRIDE)
-            return ENV_OVERRIDE
-        logger.warning(
-            "Env override path %s is not writable; falling back.", ENV_OVERRIDE
-        )
+    candidates = []
+    if ENV_OVERRIDE:
+        candidates.append((ENV_OVERRIDE, "env override"))
+    candidates.append((ANDROID_GALLERY_DIR, "Android Gallery"))
+    candidates.append((TERMUX_FALLBACK, "Termux fallback"))
 
-    # Priority 1: Android Gallery
-    if ANDROID_GALLERY_DIR.parent.exists() and _is_writable(ANDROID_GALLERY_DIR):
-        logger.info("Using Android Gallery path: %s", ANDROID_GALLERY_DIR)
-        return ANDROID_GALLERY_DIR
-
-    # Priority 2: Termux fallback
-    if _is_writable(TERMUX_FALLBACK):
-        logger.info("Using Termux fallback path: %s", TERMUX_FALLBACK)
-        return TERMUX_FALLBACK
+    path = _find_writable_path(candidates)
+    if path:
+        return path
 
     # Priority 3: Local fallback (always works, we create it)
     if not LOCAL_FALLBACK.exists():
         LOCAL_FALLBACK.mkdir(parents=True, exist_ok=True)
     logger.info("Using local fallback path: %s", LOCAL_FALLBACK)
     return LOCAL_FALLBACK
+
+
+def _parse_ffmpeg_version(first_line: str) -> bool:
+    """Parse FFmpeg version string and return True if >= 4.0."""
+    try:
+        parts = first_line.split()
+        for part in parts:
+            if part[0].isdigit():
+                version_str = part.split("-")[0]  # e.g., "4.4.2"
+                major = int(version_str.split(".")[0])
+                return major >= 4
+    except (ValueError, IndexError):
+        pass
+    return True  # if we can't parse, assume OK
 
 
 def check_ffmpeg(version_check: bool = True) -> bool:
@@ -105,19 +121,10 @@ def check_ffmpeg(version_check: bool = True) -> bool:
             capture_output=True,
             text=True,
             timeout=5,
-            check=False,  # explicit to avoid W1510
+            check=False,
         )
         if result.returncode != 0:
             return True  # command failed, but ffmpeg exists – assume OK
-        first_line = result.stdout.splitlines()[0]
-        # e.g., "ffmpeg version 4.4.2 ..." -> extract version
-        parts = first_line.split()
-        for part in parts:
-            if part[0].isdigit():
-                version_str = part.split("-")[0]  # e.g., "4.4.2"
-                major = int(version_str.split(".")[0])
-                return major >= 4
-        return True  # if we can't parse, assume OK
-    except (OSError, ValueError, IndexError, AttributeError):
-        # If version check fails or parsing fails, still assume it's available
+        return _parse_ffmpeg_version(result.stdout.splitlines()[0])
+    except (OSError, AttributeError):
         return True

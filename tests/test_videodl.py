@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-from infrastructure.videodl import VideoDLFallback, InvalidURLError
+from infrastructure.adapters.videodl import VideoDLFallback, InvalidURLError
 
 
 @pytest.fixture

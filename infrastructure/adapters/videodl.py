@@ -12,6 +12,7 @@ from typing import Any
 
 import requests
 from requests.exceptions import RequestException, Timeout as RequestsTimeout
+from infrastructure.adapters.network import NetworkClient
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ class DownloadOptions:
 # ---------------------------------------------------------------------------
 class VideoDLFallback:
     """
-    A robust, production‑ready downloader for simple HTTP(S) media files.
+    A robust, production-ready downloader for simple HTTP(S) media files.
 
     Features:
         - Sync and async interfaces
@@ -87,9 +88,11 @@ class VideoDLFallback:
     def __init__(self, timeout: float = 30.0) -> None:
         """
         Args:
-            timeout: Default connect & read timeout in seconds (passed to requests).
+            timeout: Default connect & read timeout in seconds.
         """
         self.timeout = timeout
+        self.network_client = NetworkClient()
+
 
     # ------------------------------------------------------------------
     # Validation
@@ -98,7 +101,7 @@ class VideoDLFallback:
     def _validate_url(url: str) -> None:
         """Raise InvalidURLError if *url* is not a plausible HTTP(S) URL."""
         if not isinstance(url, str) or not url.strip():
-            raise InvalidURLError("URL must be a non‑empty string.")
+            raise InvalidURLError("URL must be a non-empty string.")
         if not url.startswith(("http://", "https://")):
             raise InvalidURLError("URL must start with http:// or https://")
 
@@ -106,6 +109,22 @@ class VideoDLFallback:
     def _ensure_dir(path: Path) -> None:
         """Create the parent directory of *path* if it doesn't exist."""
         path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _handle_retry_failure(
+        self, attempt: int, max_retries: int, exc: Exception
+    ) -> None:
+        """Handle retry backoff or raise if attempts are exhausted."""
+        if attempt == max_retries:
+            logger.error("Download failed after %d attempts.", max_retries)
+            raise exc
+        wait = self.BACKOFF_FACTOR ** (attempt - 1)
+        logger.warning(
+            "Download attempt %d failed: %s. Retrying in %.1fs...",
+            attempt,
+            exc,
+            wait,
+        )
+        time.sleep(wait)
 
     # ------------------------------------------------------------------
     # Core download logic (sync)
@@ -152,20 +171,61 @@ class VideoDLFallback:
                     timeout=timeout,
                 )
             except (RequestException, DownloadTimeoutError) as exc:
-                if attempt == options.retries:
-                    logger.error("Download failed after %d attempts.", options.retries)
-                    raise
-                wait = self.BACKOFF_FACTOR ** (attempt - 1)
-                logger.warning(
-                    "Download attempt %d failed: %s. Retrying in %.1fs...",
-                    attempt,
-                    exc,
-                    wait,
-                )
-                time.sleep(wait)
+                self._handle_retry_failure(attempt, options.retries, exc)
 
         # Unreachable
         raise DownloadError("Unexpected retry loop exit.")
+
+    def _get_response(self, url: str, timeout: float) -> requests.Response:
+        """Handle response fetching."""
+        try:
+            # We use a blocking request wrapped in an async method in NetworkClient
+            # for consistency and rate limiting
+            response = asyncio.run(
+                self.network_client.get(url, stream=True, timeout=timeout)
+            )
+            response.raise_for_status()
+            return response
+        except RequestsTimeout as exc:
+            raise DownloadTimeoutError(f"Request timed out: {url}") from exc
+        except RequestException as exc:
+            raise DownloadError(f"Request failed: {exc}") from exc
+
+    def _write_chunks(
+        self,
+        f: Any,
+        response: requests.Response,
+        chunk_size: int,
+        total_size_int: int | None,
+        progress_callback: Callable[[int, int | None], Any] | None,
+    ) -> None:
+        """Write chunks to file and trigger progress callbacks."""
+        downloaded = 0
+        for chunk in response.iter_content(chunk_size=chunk_size):
+            if chunk:
+                f.write(chunk)
+                downloaded += len(chunk)
+                if progress_callback:
+                    progress_callback(downloaded, total_size_int)
+
+    def _write_file(
+        self,
+        response: requests.Response,
+        output_path: Path,
+        chunk_size: int,
+        progress_callback: Callable[[int, int | None], Any] | None,
+    ) -> None:
+        """Handle file writing and progress."""
+        total_size = response.headers.get("Content-Length")
+        total_size_int = int(total_size) if total_size else None
+
+        try:
+            with open(output_path, "wb") as f:
+                self._write_chunks(
+                    f, response, chunk_size, total_size_int, progress_callback
+                )
+        except OSError as exc:
+            raise FileWriteError(f"Failed to write to {output_path}: {exc}") from exc
 
     def _single_download(
         self,
@@ -177,35 +237,8 @@ class VideoDLFallback:
         timeout: float,
     ) -> Path:
         """Perform a single download attempt (no retries)."""
-        try:
-            response = requests.get(url, stream=True, timeout=timeout)
-            response.raise_for_status()
-        except RequestsTimeout as exc:
-            raise DownloadTimeoutError(f"Request timed out: {url}") from exc
-        except RequestException as exc:
-            raise DownloadError(f"Request failed: {exc}") from exc
-
-        total_size = response.headers.get("Content-Length")
-        if total_size is not None:
-            try:
-                total_size_int = int(total_size)
-            except ValueError:
-                total_size_int = None
-        else:
-            total_size_int = None
-
-        try:
-            with open(output_path, "wb") as f:
-                downloaded = 0
-                for chunk in response.iter_content(chunk_size=chunk_size):
-                    if chunk:  # filter keep‑alive chunks
-                        f.write(chunk)
-                        downloaded += len(chunk)
-                        if progress_callback:
-                            progress_callback(downloaded, total_size_int)
-        except OSError as exc:
-            raise FileWriteError(f"Failed to write to {output_path}: {exc}") from exc
-
+        response = self._get_response(url, timeout)
+        self._write_file(response, output_path, chunk_size, progress_callback)
         return output_path
 
     # ------------------------------------------------------------------

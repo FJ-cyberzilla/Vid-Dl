@@ -6,6 +6,7 @@ def test_infrastructure_error_str() -> None:
     assert str(err) == "Test [path=/home/test]"
     assert repr(err) == "InfrastructureError('Test', **{'path': '/home/test'})"
 
+
 def test_infrastructure_error_to_dict() -> None:
     err = InfrastructureError("Test", path="/home/test")
     d = err.to_dict()

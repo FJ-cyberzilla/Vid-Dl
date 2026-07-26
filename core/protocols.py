@@ -2,46 +2,11 @@
 
 from typing import Protocol, Any
 from collections.abc import Callable
-from pathlib import Path
-from enum import Enum
-from pydantic import BaseModel, Field
-
-
-# ---------- Domain Models ----------
-class DownloadStatus(Enum):
-    PENDING = "pending"
-    DOWNLOADING = "downloading"
-    PAUSED = "paused"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-
-class DownloadOptions(BaseModel):
-    """Configuration for a download operation with validation."""
-
-    output_dir: Path = Field(default_factory=lambda: Path("."))
-    quality: str = "best"
-    format: str | None = None
-    overwrite: bool = False
-    retries: int = 3
-    timeout: float | None = 30.0
-    cookiefile: Path | None = None
-    extra_args: dict[str, Any] = Field(default_factory=dict)
-    dry_run: bool = False
-
-
-class DownloadResult(BaseModel):
-    """Result of a download attempt with validation."""
-
-    status: DownloadStatus
-    file_path: Path | None = None
-    error: str | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
+from typing import TypeAlias
+from core.models import DownloadOptions, DownloadResult, DownloadStatus  # noqa: F401
 
 # ---------- Progress Reporting ----------
-TaskID = int
+TaskID: TypeAlias = int
 
 
 class ProgressReporter(Protocol):

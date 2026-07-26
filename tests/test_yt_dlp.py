@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 from unittest.mock import MagicMock, patch
-from infrastructure.yt_dlp_wrapper import YtDlpEngine, YtDlpError
+from infrastructure.adapters.yt_dlp import YtDlpEngine, YtDlpError
 from yt_dlp.utils import DownloadError
 
 
@@ -24,7 +24,7 @@ def test_get_opts_with_extra(engine: YtDlpEngine) -> None:
     assert opts["format"] == "bestvideo+bestaudio/best"
 
 
-@patch("infrastructure.yt_dlp_wrapper.yt_dlp.YoutubeDL")
+@patch("infrastructure.adapters.yt_dlp.yt_dlp.YoutubeDL")
 def test_download_success(
     mock_ydl_class: MagicMock, engine: YtDlpEngine, tmp_path: Path
 ) -> None:
@@ -53,7 +53,7 @@ def test_download_success(
     mock_ydl.download.assert_called_once_with(["http://example.com"])
 
 
-@patch("infrastructure.yt_dlp_wrapper.yt_dlp.YoutubeDL")
+@patch("infrastructure.adapters.yt_dlp.yt_dlp.YoutubeDL")
 def test_download_failure(
     mock_ydl_class: MagicMock, engine: YtDlpEngine, tmp_path: Path
 ) -> None:
@@ -66,7 +66,7 @@ def test_download_failure(
         engine.download("http://example.com", tmp_path)
 
 
-@patch("infrastructure.yt_dlp_wrapper.yt_dlp.YoutubeDL")
+@patch("infrastructure.adapters.yt_dlp.yt_dlp.YoutubeDL")
 def test_download_missing_file_error(
     mock_ydl_class: MagicMock, engine: YtDlpEngine, tmp_path: Path
 ) -> None:

@@ -67,6 +67,7 @@ class NetworkManager:
         timeout: float = 10.0,
         max_retries: int = 3,
         user_agent: str = "NetworkManager/3.0",
+        max_concurrent_requests: int = 5,
     ) -> None:
         """
         Args:
@@ -74,11 +75,22 @@ class NetworkManager:
             timeout: Request timeout in seconds (connect + read).
             max_retries: Maximum retries for transient failures.
             user_agent: User‑Agent header to use in all requests.
+            max_concurrent_requests: Maximum number of concurrent network requests.
         """
         self.timeout = timeout
         self.session = self._build_session(
             proxy=proxy, max_retries=max_retries, user_agent=user_agent
         )
+        self._semaphore = asyncio.Semaphore(max_concurrent_requests)
+
+    async def throttled_request(
+        self, func: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
+        """Execute a network request function within the semaphore limits."""
+        async with self._semaphore:
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(None, func, *args, **kwargs)
+
 
     @staticmethod
     def _build_session(
@@ -149,6 +161,70 @@ class NetworkManager:
     # ------------------------------------------------------------------
     # Speed measurement
     # ------------------------------------------------------------------
+    def _perform_download_test(
+        self,
+        test_url: str,
+        duration: float,
+        chunk_size: int,
+        progress_callback: Callable[[float], Any] | None,
+    ) -> tuple[int, float]:
+        """Perform the actual download and measure bytes/time."""
+        start_time = time.monotonic()
+        downloaded_bytes = 0
+
+        with self.session.get(test_url, stream=True, timeout=self.timeout) as resp:
+            resp.raise_for_status()
+            for chunk in resp.iter_content(chunk_size=chunk_size):
+                if not chunk:
+                    continue
+                downloaded_bytes += len(chunk)
+
+                elapsed = time.monotonic() - start_time
+                speed_mbps = (downloaded_bytes * 8) / (elapsed * 1_000_000)
+
+                if progress_callback:
+                    progress_callback(speed_mbps)
+
+                if elapsed >= duration:
+                    break
+
+        return downloaded_bytes, time.monotonic() - start_time
+
+    def _get_defaults(
+        self,
+        test_url: str | None,
+        duration: float | None,
+        chunk_size: int | None,
+    ) -> tuple[str, float, int]:
+        """Helper to get default values for speed measurement."""
+        return (
+            test_url if test_url is not None else self.SPEED_TEST_URL,
+            duration if duration is not None else self.SPEED_TEST_DURATION,
+            chunk_size if chunk_size is not None else self.CHUNK_SIZE,
+        )
+
+    def _measure_speed(
+        self,
+        test_url: str,
+        duration: float,
+        chunk_size: int,
+        progress_callback: Callable[[float], Any] | None,
+    ) -> float:
+        """Measure speed and calculate throughput, raising errors on failure."""
+        try:
+            downloaded_bytes, elapsed_total = self._perform_download_test(
+                test_url, duration, chunk_size, progress_callback
+            )
+        except RequestException as exc:
+            raise SpeedMeasurementError(f"Speed test failed: {exc}") from exc
+
+        if elapsed_total <= 0:
+            raise SpeedMeasurementError("Measurement duration too short.")
+
+        speed_mbps = (downloaded_bytes * 8) / (elapsed_total * 1_000_000)
+        logger.debug("Measured speed: %.2f Mbps", speed_mbps)
+        return speed_mbps
+
     def get_speed_mbps(
         self,
         test_url: str | None = None,
@@ -174,38 +250,8 @@ class NetworkManager:
         Raises:
             SpeedMeasurementError: If the measurement fails.
         """
-        test_url = test_url or self.SPEED_TEST_URL
-        duration = duration or self.SPEED_TEST_DURATION
-        chunk_size = chunk_size or self.CHUNK_SIZE
-
-        start_time = time.monotonic()
-        downloaded_bytes = 0
-
-        try:
-            with self.session.get(test_url, stream=True, timeout=self.timeout) as resp:
-                resp.raise_for_status()
-                for chunk in resp.iter_content(chunk_size=chunk_size):
-                    if not chunk:
-                        continue
-                    downloaded_bytes += len(chunk)
-                    elapsed = time.monotonic() - start_time
-                    # Compute current speed
-                    speed_mbps = (downloaded_bytes * 8) / (elapsed * 1_000_000)
-                    if progress_callback:
-                        progress_callback(speed_mbps)
-                    # Stop after the specified duration
-                    if elapsed >= duration:
-                        break
-        except RequestException as exc:
-            raise SpeedMeasurementError(f"Speed test failed: {exc}") from exc
-
-        elapsed_total = time.monotonic() - start_time
-        if elapsed_total <= 0:
-            raise SpeedMeasurementError("Measurement duration too short.")
-
-        speed_mbps = (downloaded_bytes * 8) / (elapsed_total * 1_000_000)
-        logger.debug("Measured speed: %.2f Mbps", speed_mbps)
-        return speed_mbps
+        url, dur, size = self._get_defaults(test_url, duration, chunk_size)
+        return self._measure_speed(url, dur, size, progress_callback)
 
     async def get_speed_mbps_async(
         self,

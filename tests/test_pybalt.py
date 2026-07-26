@@ -1,7 +1,7 @@
 import pytest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-from infrastructure.pybalt import (
+from infrastructure.adapters.pybalt import (
     PyBaltEngine,
     ExtractOptions,
     MissingDependencyError,
