@@ -34,26 +34,33 @@ def _get_quality_choice(is_audio: bool) -> str:
     Prompt the user for quality selection using a clean panel.
     """
     console.print("\n")
+    table = Table(box=None, padding=(0, 1))
+    table.add_column("Option", justify="right", style=ACCENT)
+    table.add_column("Description", style=TEXT)
+
     if is_audio:
-        options = (
-            f"[{THEME}]1.[/] High (320kbps)\n"
-            f"[{THEME}]2.[/] Medium (192kbps)\n"
-            f"[{THEME}]3.[/] Low (128kbps)"
-        )
-        title = "Select Audio Quality"
+        table.add_row("1", "High-Fidelity Audio (320kbps)")
+        table.add_row("2", "Standard Audio (192kbps)")
+        table.add_row("3", "Compact Audio (128kbps)")
+        title = "AUDIO ENGINE CONFIGURATION"
         quality_map = {"1": "320", "2": "192", "3": "128"}
     else:
-        options = (
-            f"[{THEME}]1.[/] Maximum (1080p+)\n"
-            f"[{THEME}]2.[/] High (720p)\n"
-            f"[{THEME}]3.[/] Standard (480p)"
-        )
-        title = "Select Video Quality"
+        table.add_row("1", "Ultra High Definition (1080p+)")
+        table.add_row("2", "High Definition (720p)")
+        table.add_row("3", "Standard Definition (480p)")
+        title = "VIDEO STREAM CONFIGURATION"
         quality_map = {"1": "best", "2": "720", "3": "480"}
 
-    console.print(Panel(options, title=f"[bold]{title}[/]", border_style=THEME))
+    console.print(
+        Panel(
+            table,
+            title=f"[bold {THEME}]{title}[/]",
+            border_style=THEME,
+            padding=(1, 2),
+        )
+    )
     q_choice = Prompt.ask(
-        f"[{THEME}]Selection[/]",
+        f"[{THEME}]Select Grade[/]",
         choices=["1", "2", "3"],
         default="1",
     )
@@ -75,37 +82,51 @@ def _handle_results(results: list[DownloadResult], output_path: Path) -> None:
 def _handle_settings() -> None:
     """Handle the settings menu with a clean panel."""
     while True:
+        settings_table = Table(box=None, show_header=False, padding=(0, 1))
+        settings_table.add_column("ID", justify="right", style=ACCENT)
+        settings_table.add_column("Option", style=TEXT)
+
+        settings_table.add_row("1", "UPDATE COOKIES DATASOURCE")
+        settings_table.add_row("2", "OVERRIDE DOWNLOAD PATH")
+        settings_table.add_row("3", "RETURN TO COMMAND CENTER")
+
         console.print(
             Panel(
-                f"[dim]Cookies Path:[/dim] {config.settings.COOKIES_PATH}\n"
-                f"[dim]Download Path:[/dim] {config.settings.get_download_path()}\n\n"
-                f"[{THEME}]1.[/] Update Cookies Path\n"
-                f"[{THEME}]2.[/] Set Custom Download Path\n"
-                f"[{THEME}]3.[/] Back to Main Menu",
-                title="[bold]System Settings[/]",
+                f"[dim]SOURCE:[/dim] {config.settings.COOKIES_PATH}\n"
+                f"[dim]TARGET:[/dim] {config.settings.get_download_path()}\n\n"
+                + "[divider]\n" if hasattr(console, "divider") else "\n",
+                title=f"[bold {THEME}]SYSTEM CONFIGURATION[/]",
                 border_style=THEME,
+                padding=(1, 2),
+            )
+        )
+        console.print(
+            Panel(
+                settings_table,
+                border_style=MUTED,
+                padding=(1, 2),
             )
         )
 
         choice = Prompt.ask(f"[{THEME}]Select Option[/]", choices=["1", "2", "3"])
         if choice == "1":
-            new_path = Prompt.ask(f"[{THEME}]Enter new cookies.txt path[/]")
+            new_path = Prompt.ask(f"[{THEME}]Enter path to cookies.txt[/]")
             if new_path:
                 path = Path(new_path).expanduser().absolute()
                 if path.exists():
                     config.settings.COOKIES_PATH = path
-                    print_success(f"Cookies path updated to: {path}")
+                    print_success(f"Source updated: {path}")
                 else:
-                    print_error(f"File not found: {path}")
+                    print_error(f"Source not found: {path}")
         elif choice == "2":
-            new_path = Prompt.ask(f"[{THEME}]Enter custom download directory[/]")
+            new_path = Prompt.ask(f"[{THEME}]Enter target directory[/]")
             if new_path:
                 path = Path(new_path).expanduser().absolute()
                 if config.settings._is_writable(path):
                     config.settings.ENV_OVERRIDE = path
-                    print_success(f"Download path updated to: {path}")
+                    print_success(f"Target updated: {path}")
                 else:
-                    print_error(f"Path is not writable: {path}")
+                    print_error(f"Target not writable: {path}")
         else:
             break
 
@@ -128,23 +149,26 @@ def launch_command_center() -> None:
 
         # Display route information in a compact panel
         info_panel = Panel(
-            f"[dim]Storage:[/dim] {output_path}\n"
-            f"[dim]Cookies:[/dim] {config.settings.COOKIES_PATH}",
+            f"[bold {ACCENT}]STORAGE :[/] [white]{output_path}[/]\n"
+            f"[bold {ACCENT}]COOKIES :[/] [white]{config.settings.COOKIES_PATH}[/]",
             border_style=MUTED,
-            padding=(0, 1),
-            title="[bold]Session Info[/]",
+            padding=(0, 2),
+            title=f"[bold {THEME}]SYSTEM STATUS[/]",
         )
 
-        # Main Menu Panel
-        menu_items = (
-            f"[{ACCENT}]1.[/] [bold]Download Video[/] (MP4/Playlist)\n"
-            f"[{ACCENT}]2.[/] [bold]Download Audio[/] (MP3/Playlist)\n"
-            f"[{ACCENT}]3.[/] System Settings\n"
-            f"[{ACCENT}]4.[/] Exit System"
-        )
+        # Main Menu Table for better alignment
+        menu_table = Table(box=None, show_header=False, padding=(0, 1))
+        menu_table.add_column("ID", justify="right", style=ACCENT)
+        menu_table.add_column("Command", style=f"bold {TEXT}")
+
+        menu_table.add_row("1", "EXTRACT VIDEO STREAM (MP4/MKV)")
+        menu_table.add_row("2", "EXTRACT AUDIO STREAM (MP3/M4A)")
+        menu_table.add_row("3", "CONFIGURE SYSTEM PARAMETERS")
+        menu_table.add_row("4", "TERMINATE SESSION")
+
         menu_panel = Panel(
-            menu_items,
-            title="[bold]Main Menu[/]",
+            menu_table,
+            title=f"[bold {THEME}]PRIMARY COMMANDS[/]",
             border_style=THEME,
             padding=(1, 2),
         )
@@ -154,10 +178,10 @@ def launch_command_center() -> None:
 
         console.print(dashboard)
 
-        choice = Prompt.ask(f"[{THEME}]Select Action[/]", choices=["1", "2", "3", "4"])
+        choice = Prompt.ask(f"[{THEME}]Execute Command[/]", choices=["1", "2", "3", "4"])
 
         if choice == "4":
-            console.print(f"\n[{MUTED}]Session terminated. Goodbye![/]")
+            console.print(f"\n[bold {ERROR}]Session terminated. Goodbye hacker![/]")
             sys.exit(0)
 
         if choice == "3":

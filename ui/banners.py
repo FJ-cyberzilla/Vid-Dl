@@ -46,6 +46,15 @@ def render_main_banner(clear: bool = True) -> None:
 
     console = _console()
 
+    # Cybertronic ASCII Art
+    ascii_banner = f"""[bold {THEME}]
+   ____   ___  _____    __     ___  ____   ____  _     
+  / ___| / _ \\|_   _|   \\ \\   / (_)|  _ \\ |  _ \\| |    
+  \\___ \\| | | | | |      \\ \\ / /| || | | || | | | |    
+   ___) | |_| | | |       \\ V / | || |_| || |_| | |___ 
+  |____/ \\___/  |_|        \\_/  |_||____/ |____/|_____|
+[/]"""
+
     # Create a table to center the banner
     table = Table(
         box=None,
@@ -55,14 +64,16 @@ def render_main_banner(clear: bool = True) -> None:
     table.add_column(justify="center")
 
     banner_text = (
-        f"[bold {TEXT}]SOTA [italic {ACCENT}]Media Extractor[/]\n[dim]{TAGLINE}[/]"
+        f"{ascii_banner}\n"
+        f"[bold {TEXT}]SOTA [italic {ACCENT}]Media Extractor[/]\n"
+        f"[dim]{TAGLINE}[/]"
     )
 
     panel = Panel(
         banner_text,
         border_style=THEME,
         title=f"[bold {ACCENT}] v{__version__} [/]",
-        subtitle=f"[dim {MUTED}]★[/]",
+        subtitle=f"[bold {THEME}]FJ™ Cybertronic Systems[/]",
         padding=(1, 2),
     )
 

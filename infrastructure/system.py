@@ -198,11 +198,11 @@ class SystemInfo:
     @staticmethod
     def get_load_average() -> tuple[float, float, float]:
         """Return the 1, 5, 15 minute load averages (Linux/Android)."""
-        if _PSUTIL_AVAILABLE and psutil:
+        if _PSUTIL_AVAILABLE and psutil and hasattr(psutil, "getloadavg"):
             try:
                 avg = psutil.getloadavg()
                 return (float(avg[0]), float(avg[1]), float(avg[2]))
-            except OSError as exc:
+            except (OSError, AttributeError, IndexError) as exc:
                 logger.debug("psutil getloadavg failed: %s", exc)
         # Fallback: read /proc/loadavg manually
         try:
