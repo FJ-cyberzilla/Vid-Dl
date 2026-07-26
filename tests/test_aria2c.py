@@ -57,9 +57,10 @@ async def test_run_aria2c_success(aria2c_client: Aria2cClient, tmp_path: Path) -
 @pytest.mark.asyncio
 async def test_run_aria2c_timeout(aria2c_client: Aria2cClient, tmp_path: Path) -> None:
     with patch("asyncio.create_subprocess_exec") as mock_exec:
-        mock_subproc = MagicMock()
+        # Use AsyncMock to handle coroutine methods correctly
+        mock_subproc = AsyncMock()
+        # Explicitly make kill a synchronous mock as it is not a coroutine in asyncio.subprocess
         mock_subproc.kill = MagicMock()
-        mock_subproc.wait = AsyncMock(return_value=0)
         mock_exec.return_value = mock_subproc
         with patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
             with pytest.raises(Aria2cTimeoutError):

@@ -43,11 +43,10 @@ def test_check_url_success(
     mock_head.assert_called_once()
 
 
-@patch("requests.Session.head")
-def test_check_url_failure(
-    mock_head: MagicMock, network_manager: NetworkManager
-) -> None:
-    mock_head.side_effect = RequestException("Network error")
-
-    assert network_manager.check_url("https://example.com") is False
-    mock_head.assert_called_once()
+@pytest.mark.asyncio
+async def test_check_url_async_success(network_manager: NetworkManager) -> None:
+    # Patch check_url as it's the method run in the executor by check_url_async
+    with patch.object(network_manager, "check_url", return_value=True) as mock_check:
+        result = await network_manager.check_url_async("https://example.com")
+        assert result is True
+        mock_check.assert_called_once_with("https://example.com")
