@@ -56,8 +56,8 @@ def test_full_report(mock_psutil: MagicMock) -> None:
     # Setup mock for psutil
     mock_psutil.getloadavg.return_value = (0.1, 0.1, 0.1)
     # Handle both cpu usage and per-cpu usage calls
-    mock_psutil.cpu_percent.side_effect = (
-        lambda interval=None, percpu=False: [10.0] if percpu else 10.0
+    mock_psutil.cpu_percent.side_effect = lambda interval=None, percpu=False: (
+        [10.0] if percpu else 10.0
     )
 
     report = SystemInfo.get_full_report()

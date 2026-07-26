@@ -117,3 +117,21 @@ class Downloader(Protocol):
 
     def resume(self) -> None:
         """Resume a paused download."""
+
+
+class MetadataCacheProtocol(Protocol):
+    """Protocol for metadata cache implementation."""
+
+    async def get(self, url_key: str) -> dict[str, Any] | None:
+        """Retrieves cached metadata."""
+
+    async def set(
+        self, url_key: str, data: dict[str, Any], ttl: int | None = None
+    ) -> None:
+        """Stores cached metadata."""
+
+    async def delete(self, url_key: str) -> bool:
+        """Removes a cached entry."""
+
+    async def clear(self) -> None:
+        """Clears all cached entries."""

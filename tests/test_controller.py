@@ -4,46 +4,53 @@ from core.controller import DownloadController
 from core.protocols import DownloadStatus
 
 
-def test_controller_state_transitions() -> None:
-    controller: DownloadController = DownloadController()
-
-    # Test reset
-    controller.reset()
-    assert controller.status is DownloadStatus.DOWNLOADING
-    assert not controller.cancelled
-    assert controller.pause_event.is_set()
-
-    # Test pause
-    controller.pause()
-    assert controller.status is DownloadStatus.PAUSED  # type: ignore[comparison-overlap]
-    assert not controller.pause_event.is_set()
-
-    # Test resume
-    controller.resume()
-    assert controller.status is DownloadStatus.DOWNLOADING
-    assert controller.pause_event.is_set()
-
-    # Test cancel
-    controller.cancel()
-    assert controller.status == DownloadStatus.CANCELLED
-    assert controller.cancelled
-    assert controller.pause_event.is_set()
+@pytest.fixture
+def controller() -> DownloadController:
+    return DownloadController()
 
 
-def test_check_state_not_cancelled() -> None:
-    controller = DownloadController()
+@pytest.mark.parametrize(
+    "action, expected_status, expected_cancelled, expected_pause_set",
+    [
+        ("reset", DownloadStatus.DOWNLOADING, False, True),
+        ("pause", DownloadStatus.PAUSED, False, False),
+        ("resume", DownloadStatus.DOWNLOADING, False, True),
+        ("cancel", DownloadStatus.CANCELLED, True, True),
+    ],
+)
+def test_controller_actions(
+    controller: DownloadController,
+    action: str,
+    expected_status: DownloadStatus,
+    expected_cancelled: bool,
+    expected_pause_set: bool,
+) -> None:
+    """Test individual controller actions."""
+    if action == "reset":
+        controller.reset()
+    elif action == "pause":
+        controller.pause()
+    elif action == "resume":
+        controller.resume()
+    elif action == "cancel":
+        controller.cancel()
+
+    assert controller.status == expected_status
+    assert controller.cancelled == expected_cancelled
+    assert controller.pause_event.is_set() == expected_pause_set
+
+
+def test_check_state_not_cancelled(controller: DownloadController) -> None:
     controller.check_state()  # Should not raise
 
 
-def test_check_state_cancelled() -> None:
-    controller = DownloadController()
+def test_check_state_cancelled(controller: DownloadController) -> None:
     controller.cancel()
     with pytest.raises(Exception, match="Download cancelled"):
         controller.check_state()
 
 
-def test_check_state_paused_then_resumed() -> None:
-    controller = DownloadController()
+def test_check_state_paused_then_resumed(controller: DownloadController) -> None:
     controller.pause()
 
     # Use thread to resume after a short delay

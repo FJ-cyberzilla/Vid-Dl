@@ -1,13 +1,15 @@
-import unittest
-import ast
+import pytest
 import os
+import ast
+from collections.abc import Generator
+from pathlib import Path
 from unittest.mock import MagicMock
 from core.download_service import DownloadService
 from core.protocols import Downloader, DownloadOptions
 
 
-class TestDownloadService(unittest.TestCase):
-    def setUp(self) -> None:
+class TestDownloadService:
+    def setup_method(self) -> None:
         self.mock_downloader = MagicMock(spec=Downloader)
         self.service = DownloadService(self.mock_downloader)
 
@@ -18,75 +20,60 @@ class TestDownloadService(unittest.TestCase):
         # Verify call included default options
         self.mock_downloader.execute.assert_called_once()
         args, _ = self.mock_downloader.execute.call_args
-        self.assertEqual(args[0], target)
-        self.assertIsInstance(args[1], DownloadOptions)
+        assert args[0] == target
+        assert isinstance(args[1], DownloadOptions)
 
-    def test_process_batch_file(self) -> None:
+    def test_process_batch_file(self, tmp_path: Path) -> None:
         """Test that a batch file is parsed and each URL is passed to the downloader."""
         # Create a temp batch file
-        batch_file = "temp_batch.txt"
+        batch_file = tmp_path / "temp_batch.txt"
         urls = ["https://url1.com", "https://url2.com"]
-        with open(batch_file, "w", encoding="utf-8") as f:
-            f.write("\n".join(urls))
+        batch_file.write_text("\n".join(urls), encoding="utf-8")
 
-        try:
-            self.service.process_target(batch_file)
+        self.service.process_target(str(batch_file))
 
-            # Check if downloader was called for each URL
-            self.assertEqual(self.mock_downloader.execute.call_count, 2)
-            for call_args in self.mock_downloader.execute.call_args_list:
-                args, _ = call_args
-                self.assertIn(args[0], urls)
-                self.assertIsInstance(args[1], DownloadOptions)
-        finally:
-            import os
+        # Check if downloader was called for each URL
+        assert self.mock_downloader.execute.call_count == 2
+        called_urls = [
+            call_args.args[0]
+            for call_args in self.mock_downloader.execute.call_args_list
+        ]
+        for url in urls:
+            assert url in called_urls
 
-            if os.path.exists(batch_file):
-                os.remove(batch_file)
-
-    def test_process_empty_batch_file(self) -> None:
+    def test_process_empty_batch_file(self, tmp_path: Path) -> None:
         """Test that an empty batch file raises an error."""
-        batch_file = "empty_batch.txt"
-        with open(batch_file, "w", encoding="utf-8") as f:
-            f.write("")
+        batch_file = tmp_path / "empty_batch.txt"
+        batch_file.write_text("", encoding="utf-8")
 
-        try:
-            with self.assertRaises(ValueError):
-                self.service.process_target(batch_file)
-        finally:
-            import os
-
-            if os.path.exists(batch_file):
-                os.remove(batch_file)
+        with pytest.raises(ValueError):
+            self.service.process_target(str(batch_file))
 
 
-class TestLayerDependencies(unittest.TestCase):
-    def test_core_does_not_import_infrastructure(self) -> None:
-        """Enforce that core does not directly import from infrastructure."""
-        core_dir = "core"
-        for root, _, files in os.walk(core_dir):
-            for file in files:
-                if file.endswith(".py"):
-                    file_path = os.path.join(root, file)
-                    with open(file_path, encoding="utf-8") as f:
-                        tree = ast.parse(f.read())
-                        for node in ast.walk(tree):
-                            if isinstance(node, ast.ImportFrom):
-                                if node.module and node.module.startswith(
-                                    "infrastructure"
-                                ):
-                                    self.fail(
-                                        f"Core module {file_path} illegally "
-                                        f"imports from infrastructure: {node.module}"
-                                    )
-                            elif isinstance(node, ast.Import):
-                                for alias in node.names:
-                                    if alias.name.startswith("infrastructure"):
-                                        self.fail(
-                                            f"Core module {file_path} illegally "
-                                            f"imports from infrastructure: {alias.name}"
-                                        )
+def get_core_files() -> Generator[str, None, None]:
+    core_dir = "core"
+    for root, _, files in os.walk(core_dir):
+        for file in files:
+            if file.endswith(".py"):
+                yield os.path.join(root, file)
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.parametrize("file_path", list(get_core_files()))
+def test_core_module_import_dependencies(file_path: str) -> None:
+    """Enforce that core does not directly import from infrastructure."""
+    with open(file_path, encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if node.module and node.module.startswith("infrastructure"):
+                    pytest.fail(
+                        f"Core module {file_path} illegally "
+                        f"imports from infrastructure: {node.module}"
+                    )
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.startswith("infrastructure"):
+                        pytest.fail(
+                            f"Core module {file_path} illegally "
+                            f"imports from infrastructure: {alias.name}"
+                        )

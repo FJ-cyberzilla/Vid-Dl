@@ -46,6 +46,31 @@ class SystemInfo:
     """
 
     # ------------------------------------------------------------------
+    # Helper methods
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _read_temp_file(path: Path) -> float:
+        """Read and convert temperature from a sysfs file."""
+        return float(path.read_text().strip()) / 1000.0
+
+    @staticmethod
+    def _parse_meminfo(keys: list[str]) -> dict[str, int]:
+        """Parse /proc/meminfo for specified keys."""
+        results = {key: 0 for key in keys}
+        try:
+            with open("/proc/meminfo", encoding="utf-8") as f:
+                for line in f:
+                    parts = line.split()
+                    if not parts:
+                        continue
+                    key = parts[0].replace(":", "")
+                    if key in results:
+                        results[key] = int(parts[1]) * 1024  # kB to bytes
+        except OSError as exc:
+            logger.debug("/proc/meminfo read failed: %s", exc)
+        return results
+
+    # ------------------------------------------------------------------
     # Environment detection
     # ------------------------------------------------------------------
     @staticmethod
@@ -245,31 +270,21 @@ class SystemInfo:
             except OSError as exc:
                 logger.debug("psutil virtual_memory failed: %s", exc)
         # Fallback via /proc/meminfo (Linux/Android)
-        try:
-            with open("/proc/meminfo", encoding="utf-8") as f:
-                mem_total = 0
-                mem_avail = 0
-                for line in f:
-                    if line.startswith("MemTotal:"):
-                        parts = line.split()
-                        mem_total = int(parts[1]) * 1024  # kB -> bytes
-                    elif line.startswith("MemAvailable:"):
-                        parts = line.split()
-                        mem_avail = int(parts[1]) * 1024
-                if mem_total > 0:
-                    used = mem_total - mem_avail
-                    percent = (used / mem_total) * 100.0
-                    mem_info.update(
-                        {
-                            "total": float(mem_total),
-                            "available": float(mem_avail),
-                            "percent": percent,
-                            "used": float(used),
-                        }
-                    )
-                    return mem_info
-        except OSError as exc:
-            logger.debug("/proc/meminfo fallback failed: %s", exc)
+        mem_data = SystemInfo._parse_meminfo(["MemTotal", "MemAvailable"])
+        mem_total = mem_data["MemTotal"]
+        mem_avail = mem_data["MemAvailable"]
+        if mem_total > 0:
+            used = mem_total - mem_avail
+            percent = (used / mem_total) * 100.0
+            mem_info.update(
+                {
+                    "total": float(mem_total),
+                    "available": float(mem_avail),
+                    "percent": percent,
+                    "used": float(used),
+                }
+            )
+            return mem_info
         return mem_info
 
     @staticmethod
@@ -290,29 +305,19 @@ class SystemInfo:
             except OSError as exc:
                 logger.debug("psutil swap_memory failed: %s", exc)
         # Fallback via /proc/meminfo
-        try:
-            with open("/proc/meminfo", encoding="utf-8") as f:
-                total = 0
-                free = 0
-                for line in f:
-                    if line.startswith("SwapTotal:"):
-                        parts = line.split()
-                        total = int(parts[1]) * 1024
-                    elif line.startswith("SwapFree:"):
-                        parts = line.split()
-                        free = int(parts[1]) * 1024
-                if total > 0:
-                    used = total - free
-                    percent = (used / total) * 100.0
-                    swap_info.update(
-                        {
-                            "total": float(total),
-                            "used": float(used),
-                            "percent": percent,
-                        }
-                    )
-        except OSError as exc:
-            logger.debug("Swap fallback failed: %s", exc)
+        swap_data = SystemInfo._parse_meminfo(["SwapTotal", "SwapFree"])
+        total = swap_data["SwapTotal"]
+        free = swap_data["SwapFree"]
+        if total > 0:
+            used = total - free
+            percent = (used / total) * 100.0
+            swap_info.update(
+                {
+                    "total": float(total),
+                    "used": float(used),
+                    "percent": percent,
+                }
+            )
         return swap_info
 
     # ------------------------------------------------------------------
@@ -383,7 +388,7 @@ class SystemInfo:
     @staticmethod
     def _get_temperatures_via_thermal_zones() -> dict[str, float]:
         """Gather temperatures from Linux thermal zones."""
-        temps = {}
+        temps: dict[str, float] = {}
         try:
             base = Path("/sys/class/thermal")
             if not base.exists():
@@ -396,9 +401,7 @@ class SystemInfo:
                     if type_path.is_file() and temp_path.is_file():
                         try:
                             type_name = type_path.read_text().strip()
-                            temp_str = temp_path.read_text().strip()
-                            temp_c = float(temp_str) / 1000.0
-                            temps[type_name] = temp_c
+                            temps[type_name] = SystemInfo._read_temp_file(temp_path)
                         except (OSError, ValueError) as exc:
                             logger.debug(
                                 "Could not read thermal zone %s: %s", zone, exc

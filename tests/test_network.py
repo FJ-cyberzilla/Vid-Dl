@@ -4,7 +4,6 @@ from infrastructure.network import (
     NetworkManager,
     InvalidURLError,
 )
-from requests.exceptions import RequestException
 
 
 @pytest.fixture
@@ -50,3 +49,26 @@ async def test_check_url_async_success(network_manager: NetworkManager) -> None:
         result = await network_manager.check_url_async("https://example.com")
         assert result is True
         mock_check.assert_called_once_with("https://example.com")
+
+
+def test_build_session() -> None:
+    session = NetworkManager._build_session(
+        proxy="http://proxy:8080", max_retries=5, user_agent="TestAgent"
+    )
+    assert session.headers["User-Agent"] == "TestAgent"
+    assert session.proxies["http"] == "http://proxy:8080"
+    # Verify retry adapter is mounted
+    assert "http://" in session.adapters
+    assert "https://" in session.adapters
+
+
+@patch("requests.Session.get")
+def test_get_speed_mbps_success(
+    mock_get: MagicMock, network_manager: NetworkManager
+) -> None:
+    mock_response = MagicMock()
+    mock_response.iter_content.return_value = [b"a" * 1024]
+    mock_get.return_value.__enter__.return_value = mock_response
+
+    speed = network_manager.get_speed_mbps(duration=0.1)
+    assert speed > 0
