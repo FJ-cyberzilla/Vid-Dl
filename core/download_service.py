@@ -79,6 +79,21 @@ class DownloadService:
         else:
             self._current_task_id = None
 
+        self._execute_download_loop(urls, opts)
+
+        # Final progress update
+        if self.progress_reporter and self._current_task_id is not None:
+            self.progress_reporter.update(
+                self._current_task_id,
+                completed=len(self._results),
+                description=f"Completed {len(self._results)} downloads",
+                status="done",
+            )
+
+        return self._results
+
+    def _execute_download_loop(self, urls: list[str], opts: DownloadOptions) -> None:
+        """Execute the download loop for a list of URLs."""
         for idx, url in enumerate(urls, start=1):
             if self._cancelled:
                 logger.info("Batch cancelled by user.")
@@ -93,20 +108,8 @@ class DownloadService:
             logger.info("Downloading [%d/%d]: %s", idx, len(urls), url)
             try:
                 result = self.downloader.execute(url, opts)
-            except (ValueError, TypeError) as e:
-                # Catch configuration or type errors
-                logger.exception("Configuration error downloading %s", url)
-                result = DownloadResult(
-                    status=DownloadStatus.FAILED,
-                    error=f"Config error: {e}",
-                )
-            except (OSError, KeyError, AttributeError) as e:
-                # Catch unexpected system or parsing errors
-                logger.exception("Unexpected system error downloading %s", url)
-                result = DownloadResult(
-                    status=DownloadStatus.FAILED,
-                    error=f"Unexpected error: {e}",
-                )
+            except (ValueError, TypeError, OSError, KeyError, AttributeError) as e:
+                result = self._handle_download_error(url, e)
 
             self._results.append(result)
 
@@ -119,16 +122,19 @@ class DownloadService:
                     status=result.status.value,
                 )
 
-        # Final progress update
-        if self.progress_reporter and self._current_task_id is not None:
-            self.progress_reporter.update(
-                self._current_task_id,
-                completed=len(self._results),
-                description=f"Completed {len(self._results)} downloads",
-                status="done",
+    def _handle_download_error(self, url: str, error: Exception) -> DownloadResult:
+        """Handle errors during download."""
+        if isinstance(error, (ValueError, TypeError)):
+            logger.exception("Configuration error downloading %s", url)
+            return DownloadResult(
+                status=DownloadStatus.FAILED,
+                error=f"Config error: {error}",
             )
-
-        return self._results
+        logger.exception("Unexpected system error downloading %s", url)
+        return DownloadResult(
+            status=DownloadStatus.FAILED,
+            error=f"Unexpected error: {error}",
+        )
 
     def cancel(self) -> None:
         """Cancel the current batch operation."""

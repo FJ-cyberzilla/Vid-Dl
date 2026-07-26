@@ -366,13 +366,8 @@ class SystemInfo:
     # Temperature
     # ------------------------------------------------------------------
     @staticmethod
-    def get_temperatures() -> dict[str, float]:
-        """
-        Return a dict of sensor names and their temperatures in °C.
-
-        On Linux/Android this may include ``cpu_thermal``, ``battery``, etc.
-        Returns an empty dict if not available.
-        """
+    def _get_temperatures_via_psutil() -> dict[str, float]:
+        """Gather temperatures using psutil."""
         temps = {}
         if _PSUTIL_AVAILABLE:
             try:
@@ -381,12 +376,19 @@ class SystemInfo:
                     for entry in entries:
                         label = entry.label or name
                         temps[label] = entry.current
-                return temps
             except OSError as exc:
                 logger.debug("psutil sensors_temperatures failed: %s", exc)
-        # Manual fallback for Linux thermal zones
+        return temps
+
+    @staticmethod
+    def _get_temperatures_via_thermal_zones() -> dict[str, float]:
+        """Gather temperatures from Linux thermal zones."""
+        temps = {}
         try:
             base = Path("/sys/class/thermal")
+            if not base.exists():
+                return temps
+
             for zone in base.iterdir():
                 if zone.is_dir() and zone.name.startswith("thermal_zone"):
                     type_path = zone / "type"
@@ -402,7 +404,20 @@ class SystemInfo:
                                 "Could not read thermal zone %s: %s", zone, exc
                             )
         except OSError as exc:
-            logger.debug("Thermal zone fallback failed: %s", exc)
+            logger.debug("Thermal zone lookup failed: %s", exc)
+        return temps
+
+    @staticmethod
+    def get_temperatures() -> dict[str, float]:
+        """
+        Return a dict of sensor names and their temperatures in °C.
+
+        On Linux/Android this may include ``cpu_thermal``, ``battery``, etc.
+        Returns an empty dict if not available.
+        """
+        temps = SystemInfo._get_temperatures_via_psutil()
+        if not temps:
+            temps = SystemInfo._get_temperatures_via_thermal_zones()
         return temps
 
     # ------------------------------------------------------------------
