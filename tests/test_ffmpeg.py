@@ -102,12 +102,20 @@ async def test_run_ffmpeg_timeout(ffmpeg_proc: FFmpegProcessor) -> None:
     with patch("asyncio.create_subprocess_exec") as mock_exec:
         mock_subproc = MagicMock()
         mock_subproc.kill = MagicMock()
-        mock_subproc.wait = AsyncMock(return_value=0)
+        
+        # Use Future instead of AsyncMock to avoid unawaited coroutine warnings
+        # when asyncio.wait_for is patched to raise TimeoutError.
+        f = asyncio.Future()
+        f.set_result(0)
+        mock_subproc.wait = MagicMock(return_value=f)
         mock_exec.return_value = mock_subproc
+        
         # Mock wait to raise TimeoutError
-        with patch("asyncio.wait_for", side_effect=asyncio.TimeoutError):
-            with pytest.raises(FFmpegTimeoutError, match="timed out after 1.0 seconds"):
-                await ffmpeg_proc._run_ffmpeg(["ffmpeg"], timeout=1.0)
+        with (
+            patch("asyncio.wait_for", side_effect=asyncio.TimeoutError),
+            pytest.raises(FFmpegTimeoutError, match="timed out after 1.0 seconds"),
+        ):
+            await ffmpeg_proc._run_ffmpeg(["ffmpeg"], timeout=1.0)
         assert mock_subproc.kill.called
 
 @pytest.mark.asyncio
