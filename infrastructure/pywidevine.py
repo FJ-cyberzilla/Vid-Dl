@@ -45,7 +45,7 @@ class DRMError(Exception):
 class DependencyMissingError(DRMError):
     """Raised when required DRM packages are not installed."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             "DRM support requires 'pywidevine' and 'video_download_drm'.\n"
             "Install with: pip install pywidevine video-download-drm"

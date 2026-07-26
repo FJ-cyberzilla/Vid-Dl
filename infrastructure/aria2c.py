@@ -178,18 +178,19 @@ class Aria2cClient:
                     proc: asyncio.subprocess.Process = proc,
                 ) -> str:
                     stderr_lines = []
-                    while True:
-                        line_bytes = await proc.stderr.readline()
-                        if not line_bytes:
-                            break
-                        line = line_bytes.decode("utf-8", errors="replace").rstrip()
-                        stderr_lines.append(line)
-                        if options.progress_callback:
-                            pct = _parse_progress(line)
-                            if pct is not None:
-                                await asyncio.get_event_loop().run_in_executor(
-                                    None, options.progress_callback, pct
-                                )
+                    if proc.stderr:
+                        while True:
+                            line_bytes = await proc.stderr.readline()
+                            if not line_bytes:
+                                break
+                            line = line_bytes.decode("utf-8", errors="replace").rstrip()
+                            stderr_lines.append(line)
+                            if options.progress_callback:
+                                pct = _parse_progress(line)
+                                if pct is not None:
+                                    await asyncio.get_event_loop().run_in_executor(
+                                        None, options.progress_callback, pct
+                                    )
                     return "\n".join(stderr_lines)
 
                 read_task = asyncio.create_task(read_stderr())

@@ -1,6 +1,7 @@
 """Composite downloader with fallback support."""
 
 import logging
+from typing import Any
 from collections.abc import Callable
 from core.protocols import (
     DownloaderBackend,
@@ -19,7 +20,10 @@ class FallbackDownloader:
         self.backends = backends
 
     def download(
-        self, target: str, options: DownloadOptions, progress_hook: Callable
+        self,
+        target: str,
+        options: DownloadOptions,
+        progress_hook: Callable[[dict[str, Any]], Any],
     ) -> DownloadResult:
         last_error = None
         for backend in self.backends:

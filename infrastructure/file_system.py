@@ -170,7 +170,7 @@ class FileSystemManager:
     def copy_file(self, source: Path, destination: Path) -> Path:
         """Copy a file, preserving metadata."""
         try:
-            return shutil.copy2(source, destination)
+            return Path(shutil.copy2(source, destination))
         except OSError as exc:
             raise FileSystemError(
                 f"Failed to copy {source} to {destination}: {exc}"
@@ -179,7 +179,7 @@ class FileSystemManager:
     def move_file(self, source: Path, destination: Path) -> Path:
         """Move a file, possibly across filesystems."""
         try:
-            return shutil.move(source, destination)
+            return Path(shutil.move(source, destination))
         except OSError as exc:
             raise FileSystemError(
                 f"Failed to move {source} to {destination}: {exc}"

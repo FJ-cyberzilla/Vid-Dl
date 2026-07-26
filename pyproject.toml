@@ -34,3 +34,17 @@ ignore = []
 [tool.ruff.lint.per-file-ignores]
 "tests/*.py" = ["S101"]
 "ui/menus.py" = ["S608"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "psutil",
+    "yt_dlp",
+    "yt_dlp.utils",
+    "pywidevine.*",
+    "video_download_drm"
+]
+ignore_missing_imports = true

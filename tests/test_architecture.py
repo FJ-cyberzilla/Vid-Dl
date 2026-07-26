@@ -7,11 +7,11 @@ from core.protocols import Downloader, DownloadOptions
 
 
 class TestDownloadService(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         self.mock_downloader = MagicMock(spec=Downloader)
         self.service = DownloadService(self.mock_downloader)
 
-    def test_process_single_url(self):
+    def test_process_single_url(self) -> None:
         """Test that a single URL is passed correctly to the downloader."""
         target = "https://example.com/video"
         self.service.process_target(target)
@@ -21,7 +21,7 @@ class TestDownloadService(unittest.TestCase):
         self.assertEqual(args[0], target)
         self.assertIsInstance(args[1], DownloadOptions)
 
-    def test_process_batch_file(self):
+    def test_process_batch_file(self) -> None:
         """Test that a batch file is parsed and each URL is passed to the downloader."""
         # Create a temp batch file
         batch_file = "temp_batch.txt"
@@ -44,7 +44,7 @@ class TestDownloadService(unittest.TestCase):
             if os.path.exists(batch_file):
                 os.remove(batch_file)
 
-    def test_process_empty_batch_file(self):
+    def test_process_empty_batch_file(self) -> None:
         """Test that an empty batch file raises an error."""
         batch_file = "empty_batch.txt"
         with open(batch_file, "w", encoding="utf-8") as f:
@@ -61,7 +61,7 @@ class TestDownloadService(unittest.TestCase):
 
 
 class TestLayerDependencies(unittest.TestCase):
-    def test_core_does_not_import_infrastructure(self):
+    def test_core_does_not_import_infrastructure(self) -> None:
         """Enforce that core does not directly import from infrastructure."""
         core_dir = "core"
         for root, _, files in os.walk(core_dir):

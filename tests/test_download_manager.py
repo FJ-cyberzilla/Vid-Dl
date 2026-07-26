@@ -2,48 +2,50 @@ import pytest
 from unittest.mock import MagicMock
 from core.download_manager import SOTADownloadManager
 from core.protocols import DownloadOptions, DownloadResult, DownloadStatus
-from core.fallback import FallbackDownloader
-from core.controller import DownloadController
+
+
+@pytest.fixture
+def manager(
+    mock_fallback_downloader: MagicMock, mock_controller: MagicMock
+) -> SOTADownloadManager:
+    return SOTADownloadManager(mock_fallback_downloader, mock_controller)
 
 
 class TestSOTADownloadManager:
-    @pytest.fixture
-    def mock_downloader(self):
-        return MagicMock(spec=FallbackDownloader)
-
-    @pytest.fixture
-    def mock_controller(self):
-        return MagicMock(spec=DownloadController)
-
-    @pytest.fixture
-    def manager(self, mock_downloader, mock_controller):
-        return SOTADownloadManager(mock_downloader, mock_controller)
-
-    def test_execute_dry_run(self, manager, mock_downloader):
+    def test_execute_dry_run(
+        self, manager: SOTADownloadManager, mock_fallback_downloader: MagicMock
+    ) -> None:
         options = DownloadOptions(dry_run=True)
         result = manager.execute("https://example.com", options=options)
 
         assert result.status == DownloadStatus.COMPLETED
         assert result.metadata["dry_run"] is True
-        mock_downloader.download.assert_not_called()
+        mock_fallback_downloader.download.assert_not_called()
 
-    def test_execute_success(self, manager, mock_downloader, mock_controller):
+    def test_execute_success(
+        self,
+        manager: SOTADownloadManager,
+        mock_fallback_downloader: MagicMock,
+        mock_controller: MagicMock,
+    ) -> None:
         # Setup mock progress reporter
         mock_progress = MagicMock()
         mock_controller.progress_reporter = mock_progress
 
         # Setup mock result
         success_result = DownloadResult(status=DownloadStatus.COMPLETED)
-        mock_downloader.download.return_value = success_result
+        mock_fallback_downloader.download.return_value = success_result
 
         target = "https://example.com"
         result = manager.execute(target)
 
         assert result.status == DownloadStatus.COMPLETED
-        mock_downloader.download.assert_called_once()
+        mock_fallback_downloader.download.assert_called_once()
         mock_controller.reset.assert_called_once()
 
-    def test_lifecycle_methods(self, manager, mock_controller):
+    def test_lifecycle_methods(
+        self, manager: SOTADownloadManager, mock_controller: MagicMock
+    ) -> None:
         manager.cancel()
         mock_controller.cancel.assert_called_once()
 
@@ -53,7 +55,9 @@ class TestSOTADownloadManager:
         manager.resume()
         mock_controller.resume.assert_called_once()
 
-    def test_progress_hook_downloading(self, manager, mock_controller):
+    def test_progress_hook_downloading(
+        self, manager: SOTADownloadManager, mock_controller: MagicMock
+    ) -> None:
         mock_progress = MagicMock()
         mock_controller.progress_reporter = mock_progress
         mock_controller.current_task_id = "task1"
@@ -70,7 +74,9 @@ class TestSOTADownloadManager:
         mock_controller.check_state.assert_called_once()
         mock_progress.update.assert_called_once()
 
-    def test_progress_hook_finished(self, manager, mock_controller):
+    def test_progress_hook_finished(
+        self, manager: SOTADownloadManager, mock_controller: MagicMock
+    ) -> None:
         mock_progress = MagicMock()
         mock_controller.progress_reporter = mock_progress
         mock_controller.current_task_id = "task1"

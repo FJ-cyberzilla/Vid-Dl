@@ -5,9 +5,9 @@ from config.settings import get_download_path
 
 
 class TestSOTADownloader(unittest.TestCase):
-    def test_is_valid_input_valid_urls(self):
+    def test_is_valid_input_valid_urls(self) -> None:
         """Test is_valid_input with standard valid HTTP/HTTPS URLs."""
-        valid_urls = [
+        valid_urls: list[str] = [
             "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
             "http://youtu.be/dQw4w9WgXcQ",
             "https://vimeo.com/81234567",
@@ -18,9 +18,9 @@ class TestSOTADownloader(unittest.TestCase):
             with self.subTest(url=url):
                 self.assertTrue(is_valid_input(url))
 
-    def test_is_valid_input_invalid_urls(self):
+    def test_is_valid_input_invalid_urls(self) -> None:
         """Test is_valid_input with invalid URLs."""
-        invalid_urls = [
+        invalid_urls: list[str | None] = [
             "ftp://invalid-url",
             "just_a_string",
             "http//missing-colon",
@@ -30,9 +30,11 @@ class TestSOTADownloader(unittest.TestCase):
         ]
         for url in invalid_urls:
             with self.subTest(url=url):
-                self.assertFalse(is_valid_input(url))
+                # Ensure we handle the None case explicitly for type checking
+                input_str = url if url is not None else ""
+                self.assertFalse(is_valid_input(input_str))
 
-    def test_is_valid_input_batch_files(self):
+    def test_is_valid_input_batch_files(self) -> None:
         """Test is_valid_input with local .txt files."""
         # Create a temporary txt file
         temp_file = Path("test_batch_temp_file.txt")
@@ -49,7 +51,7 @@ class TestSOTADownloader(unittest.TestCase):
             if temp_file.exists():
                 temp_file.unlink()
 
-    def test_get_download_path(self):
+    def test_get_download_path(self) -> None:
         """Test that get_download_path returns a valid writeable directory."""
         path = get_download_path()
         self.assertIsNotNone(path)

@@ -144,19 +144,20 @@ class FFmpegProcessor:
             # Read stderr line by line while the process runs
             async def read_stderr() -> str:
                 stderr_lines = []
-                while True:
-                    line_bytes = await subproc.stderr.readline()
-                    if not line_bytes:
-                        break
-                    line = line_bytes.decode("utf-8", errors="replace").rstrip()
-                    stderr_lines.append(line)
-                    if progress_callback:
-                        t = _parse_time(line)
-                        if t is not None:
-                            # Fire callback for each valid time update
-                            await asyncio.get_event_loop().run_in_executor(
-                                None, progress_callback, t
-                            )
+                if subproc.stderr:
+                    while True:
+                        line_bytes = await subproc.stderr.readline()
+                        if not line_bytes:
+                            break
+                        line = line_bytes.decode("utf-8", errors="replace").rstrip()
+                        stderr_lines.append(line)
+                        if progress_callback:
+                            t = _parse_time(line)
+                            if t is not None:
+                                # Fire callback for each valid time update
+                                await asyncio.get_event_loop().run_in_executor(
+                                    None, progress_callback, t
+                                )
                 return "\n".join(stderr_lines)
 
             # Wait for both stderr reading and process completion with timeout

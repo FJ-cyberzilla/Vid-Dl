@@ -8,11 +8,11 @@ from requests.exceptions import RequestException
 
 
 @pytest.fixture
-def network_manager():
+def network_manager() -> NetworkManager:
     return NetworkManager()
 
 
-def test_validate_url(network_manager):
+def test_validate_url(network_manager: NetworkManager) -> None:
     # Valid URLs
     network_manager._validate_url("https://example.com")
     network_manager._validate_url("http://example.com")
@@ -26,13 +26,15 @@ def test_validate_url(network_manager):
         network_manager._validate_url("not-a-url")
 
 
-def test_check_url_invalid(network_manager):
+def test_check_url_invalid(network_manager: NetworkManager) -> None:
     assert network_manager.check_url("ftp://invalid") is False
     assert network_manager.check_url("") is False
 
 
 @patch("requests.Session.head")
-def test_check_url_success(mock_head, network_manager):
+def test_check_url_success(
+    mock_head: MagicMock, network_manager: NetworkManager
+) -> None:
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_head.return_value = mock_response
@@ -42,7 +44,9 @@ def test_check_url_success(mock_head, network_manager):
 
 
 @patch("requests.Session.head")
-def test_check_url_failure(mock_head, network_manager):
+def test_check_url_failure(
+    mock_head: MagicMock, network_manager: NetworkManager
+) -> None:
     mock_head.side_effect = RequestException("Network error")
 
     assert network_manager.check_url("https://example.com") is False

@@ -79,7 +79,7 @@ class ProgressReporter(Protocol):
     def __enter__(self) -> "ProgressReporter":
         """Context manager entry."""
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Context manager exit."""
 
 
@@ -90,7 +90,10 @@ class DownloaderBackend(Protocol):
     """
 
     def download(
-        self, target: str, options: DownloadOptions, progress_hook: Callable
+        self,
+        target: str,
+        options: DownloadOptions,
+        progress_hook: Callable[[dict[str, Any]], Any],
     ) -> DownloadResult:
         """Execute a download."""
 

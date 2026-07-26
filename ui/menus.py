@@ -2,6 +2,8 @@
 
 import sys
 from pathlib import Path
+from typing import Any
+from collections.abc import Callable
 
 from rich.prompt import Prompt
 from rich.panel import Panel
@@ -14,14 +16,14 @@ from config.settings import check_ffmpeg, get_download_path
 # or re-order if necessary.
 # The error suggests circularity between ui/menus <-> core/download_manager
 
-from core.protocols import DownloadOptions
+from core.protocols import DownloadOptions, DownloadResult
 from core.download_service import DownloadService
 from utils.validators import is_valid_input
 from ui.banners import render_main_banner, print_error, print_success, console
 
 
 # Factory to break circularity
-def _get_downloader_factory():
+def _get_downloader_factory() -> Callable[..., Any]:
     from composition_root import create_sota_manager
 
     return create_sota_manager
@@ -58,7 +60,7 @@ def _get_quality_choice(is_audio: bool) -> str:
     return quality_map[q_choice]
 
 
-def _handle_results(results, output_path: Path):
+def _handle_results(results: list[DownloadResult], output_path: Path) -> None:
     """Display a summary of download results."""
     total = len(results)
     successful = sum(1 for r in results if r.status.value == "completed")
@@ -70,7 +72,7 @@ def _handle_results(results, output_path: Path):
     console.print(f"Files saved to {output_path}")
 
 
-def _handle_settings():
+def _handle_settings() -> None:
     """Handle the settings menu with a clean panel."""
     while True:
         console.print(
@@ -108,7 +110,7 @@ def _handle_settings():
             break
 
 
-def launch_command_center():
+def launch_command_center() -> None:
     """Main application loop."""
     if not check_ffmpeg():
         render_main_banner()
@@ -205,6 +207,6 @@ def launch_command_center():
             input("\nPress Enter to continue...")
 
 
-def main_menu():
+def main_menu() -> None:
     """Main menu entry point - launches the command center."""
-    return launch_command_center()
+    launch_command_center()

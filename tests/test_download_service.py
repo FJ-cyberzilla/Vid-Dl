@@ -1,21 +1,20 @@
+from pathlib import Path
+from typing import Any
 import pytest
 import threading
 from unittest.mock import MagicMock, patch
 from core.download_service import DownloadService
-from core.protocols import Downloader, DownloadOptions, DownloadResult, DownloadStatus
+from core.protocols import DownloadOptions, DownloadResult, DownloadStatus
 
 
 @pytest.fixture
-def mock_downloader():
-    return MagicMock(spec=Downloader)
-
-
-@pytest.fixture
-def service(mock_downloader):
+def service(mock_downloader: MagicMock) -> DownloadService:
     return DownloadService(downloader=mock_downloader)
 
 
-def test_process_single_target_success(service, mock_downloader):
+def test_process_single_target_success(
+    service: DownloadService, mock_downloader: MagicMock
+) -> None:
     mock_downloader.execute.return_value = DownloadResult(
         status=DownloadStatus.COMPLETED
     )
@@ -29,7 +28,9 @@ def test_process_single_target_success(service, mock_downloader):
     )
 
 
-def test_process_target_failure(service, mock_downloader):
+def test_process_target_failure(
+    service: DownloadService, mock_downloader: MagicMock
+) -> None:
     # Mock exception in downloader
     mock_downloader.execute.side_effect = ValueError("Config error")
 
@@ -37,10 +38,11 @@ def test_process_target_failure(service, mock_downloader):
 
     assert len(results) == 1
     assert results[0].status == DownloadStatus.FAILED
+    assert results[0].error is not None
     assert "Config error" in results[0].error
 
 
-def test_resolve_targets_file(service, tmp_path):
+def test_resolve_targets_file(service: DownloadService, tmp_path: Path) -> None:
     batch_file = tmp_path / "urls.txt"
     batch_file.write_text("https://a.com\n#comment\n\nhttps://b.com")
 
@@ -48,11 +50,11 @@ def test_resolve_targets_file(service, tmp_path):
     assert targets == ["https://a.com", "https://b.com"]
 
 
-def test_cancel_operation(service, mock_downloader):
+def test_cancel_operation(service: DownloadService, mock_downloader: MagicMock) -> None:
     # Setup mock to simulate a slow long-running process
     import time
 
-    def slow_execute(*args, **kwargs):
+    def slow_execute(*args: Any, **kwargs: Any) -> DownloadResult:
         time.sleep(0.1)
         return DownloadResult(status=DownloadStatus.COMPLETED)
 
@@ -71,7 +73,9 @@ def test_cancel_operation(service, mock_downloader):
     assert service._cancelled
 
 
-def test_pause_resume_operation(service, mock_downloader):
+def test_pause_resume_operation(
+    service: DownloadService, mock_downloader: MagicMock
+) -> None:
     mock_downloader.execute.return_value = DownloadResult(
         status=DownloadStatus.COMPLETED
     )
@@ -87,7 +91,7 @@ def test_pause_resume_operation(service, mock_downloader):
     assert len(results) == 1
 
 
-def test_empty_batch_file_raises(service, tmp_path):
+def test_empty_batch_file_raises(service: DownloadService, tmp_path: Path) -> None:
     empty_file = tmp_path / "empty.txt"
     empty_file.write_text("")
 
@@ -95,7 +99,7 @@ def test_empty_batch_file_raises(service, tmp_path):
         service._resolve_targets(str(empty_file))
 
 
-def test_downloader_progress_reporter_init(mock_downloader):
+def test_downloader_progress_reporter_init(mock_downloader: MagicMock) -> None:
     mock_reporter = MagicMock()
     mock_downloader.progress_reporter = None
     DownloadService(downloader=mock_downloader, progress_reporter=mock_reporter)

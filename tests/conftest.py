@@ -4,7 +4,6 @@ from pathlib import Path
 from core.protocols import Downloader, ProgressReporter
 from core.fallback import FallbackDownloader
 from core.controller import DownloadController
-from core.protocols import ProgressReporter
 
 
 @pytest.fixture

@@ -7,7 +7,7 @@ import logging
 import shutil
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 import yt_dlp
 from yt_dlp.utils import DownloadError
@@ -97,8 +97,7 @@ class YtDlpEngine:
         self,
         url: str,
         output_dir: Path,
-        *,
-        progress_callback: Callable[[ProgressDict], Any] | None = None,
+        progress_callback: Callable[[dict[str, Any]], Any] | None = None,
         extra_opts: dict[str, Any] | None = None,
     ) -> Path:
         """
@@ -126,7 +125,7 @@ class YtDlpEngine:
                 # The 'filename' field points to the final file after merging
                 final_path = Path(d["filename"])
             if progress_callback:
-                progress_callback(d)
+                progress_callback(cast(dict[str, Any], d))
 
         opts = self.get_opts(extra_opts)
         opts["outtmpl"] = str(output_dir / self.output_template)
@@ -186,7 +185,6 @@ class YtDlpEngine:
         self,
         url: str,
         output_dir: Path,
-        *,
         progress_callback: Callable[[dict[str, Any]], Any] | None = None,
         extra_opts: dict[str, Any] | None = None,
     ) -> list[Path]:

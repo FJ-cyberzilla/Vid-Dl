@@ -18,7 +18,7 @@ try:
 
     _PSUTIL_AVAILABLE = True
 except ImportError:
-    psutil = None  # type: ignore[assignment]
+    psutil = None
     _PSUTIL_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
@@ -128,9 +128,9 @@ class SystemInfo:
         Returns:
             CPU utilisation as a float, or -1.0 if not measurable.
         """
-        if _PSUTIL_AVAILABLE:
+        if _PSUTIL_AVAILABLE and psutil:
             try:
-                return psutil.cpu_percent(interval=interval)
+                return float(psutil.cpu_percent(interval=interval))
             except OSError as exc:
                 logger.debug("psutil cpu_percent failed: %s", exc)
         return -1.0
@@ -142,10 +142,10 @@ class SystemInfo:
 
         Returns an empty list if psutil is unavailable.
         """
-        if _PSUTIL_AVAILABLE:
+        if _PSUTIL_AVAILABLE and psutil:
             try:
                 # Split long line to stay under the limit
-                return psutil.cpu_percent(interval=interval, percpu=True)  # type: ignore[return-value]
+                return list(psutil.cpu_percent(interval=interval, percpu=True))
             except OSError as exc:
                 logger.debug("psutil cpu_percent percpu failed: %s", exc)
         return []
@@ -153,9 +153,9 @@ class SystemInfo:
     @staticmethod
     def get_cpu_count() -> int:
         """Return the number of logical CPUs."""
-        if _PSUTIL_AVAILABLE:
+        if _PSUTIL_AVAILABLE and psutil:
             try:
-                return psutil.cpu_count(logical=True) or 1
+                return int(psutil.cpu_count(logical=True) or 1)
             except OSError as exc:
                 logger.debug("psutil cpu_count failed: %s", exc)
         # Fallback: try os.cpu_count()
@@ -167,9 +167,9 @@ class SystemInfo:
     @staticmethod
     def get_physical_cpu_count() -> int:
         """Return the number of physical CPU cores."""
-        if _PSUTIL_AVAILABLE:
+        if _PSUTIL_AVAILABLE and psutil:
             try:
-                return psutil.cpu_count(logical=False) or 1
+                return int(psutil.cpu_count(logical=False) or 1)
             except OSError as exc:
                 logger.debug("psutil cpu_count physical failed: %s", exc)
         # Fallback: use logical count
@@ -182,14 +182,14 @@ class SystemInfo:
 
         Returns a dict with keys ``current``, ``min``, ``max`` (MHz) or empty.
         """
-        if _PSUTIL_AVAILABLE:
+        if _PSUTIL_AVAILABLE and psutil:
             try:
                 freq = psutil.cpu_freq()
                 if freq:
                     return {
-                        "current": freq.current,
-                        "min": freq.min,
-                        "max": freq.max,
+                        "current": float(freq.current),
+                        "min": float(freq.min),
+                        "max": float(freq.max),
                     }
             except OSError as exc:
                 logger.debug("psutil cpu_freq failed: %s", exc)
@@ -198,9 +198,10 @@ class SystemInfo:
     @staticmethod
     def get_load_average() -> tuple[float, float, float]:
         """Return the 1, 5, 15 minute load averages (Linux/Android)."""
-        if _PSUTIL_AVAILABLE:
+        if _PSUTIL_AVAILABLE and psutil:
             try:
-                return psutil.getloadavg()  # type: ignore[return-value]
+                avg = psutil.getloadavg()
+                return (float(avg[0]), float(avg[1]), float(avg[2]))
             except OSError as exc:
                 logger.debug("psutil getloadavg failed: %s", exc)
         # Fallback: read /proc/loadavg manually
@@ -208,7 +209,7 @@ class SystemInfo:
             with open("/proc/loadavg", encoding="utf-8") as f:
                 parts = f.read().strip().split()
                 if len(parts) >= 3:
-                    return tuple(float(x) for x in parts[:3])  # type: ignore[return-value]
+                    return (float(parts[0]), float(parts[1]), float(parts[2]))
         except OSError as exc:
             logger.debug("/proc/loadavg read failed: %s", exc)
         return (0.0, 0.0, 0.0)
@@ -438,7 +439,7 @@ class SystemInfo:
                             return int(f.read_text().strip())
                         except (OSError, ValueError) as exc:
                             logger.debug("Failed to read battery %s: %s", name, exc)
-                            return None
+                    return None
 
                 capacity = read_int("capacity")
                 status_file = base / "status"
@@ -460,9 +461,9 @@ class SystemInfo:
     @staticmethod
     def get_uptime_seconds() -> float:
         """Return system uptime in seconds, or 0.0 if unknown."""
-        if _PSUTIL_AVAILABLE:
+        if _PSUTIL_AVAILABLE and psutil:
             try:
-                return time.time() - psutil.boot_time()
+                return float(time.time() - psutil.boot_time())
             except OSError as exc:
                 logger.debug("psutil boot_time failed: %s", exc)
         # Read /proc/uptime (Linux/Android)

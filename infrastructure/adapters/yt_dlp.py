@@ -3,6 +3,7 @@ Adapter to make YtDlpEngine compliant with DownloaderBackend protocol.
 """
 
 from collections.abc import Callable
+from typing import Any
 from core.protocols import DownloadOptions, DownloadResult, DownloadStatus
 from infrastructure.yt_dlp_wrapper import YtDlpEngine, YtDlpError
 import logging
@@ -13,11 +14,14 @@ logger = logging.getLogger(__name__)
 class YtDlpBackend:
     """Adapter to map YtDlpEngine to DownloaderBackend protocol."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.engine = YtDlpEngine()
 
     def download(
-        self, target: str, options: DownloadOptions, progress_hook: Callable
+        self,
+        target: str,
+        options: DownloadOptions,
+        progress_hook: Callable[[dict[str, Any]], Any],
     ) -> DownloadResult:
         """Execute a download."""
 

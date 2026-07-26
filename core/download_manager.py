@@ -3,6 +3,7 @@
 from pathlib import Path
 import os
 import logging
+from typing import Any
 
 from config.colors import THEME
 from ui.progress_bars import get_sota_progress
@@ -66,7 +67,7 @@ class SOTADownloadManager(Downloader):
                 metadata={"target": target, "dry_run": True},
             )
 
-        with self.controller.progress_reporter as progress:
+        with self.progress_reporter as progress:
             self.controller.current_task_id = progress.add_task(
                 f"Preparing download: {target[:50]}...",
                 total=None,
@@ -108,8 +109,8 @@ class SOTADownloadManager(Downloader):
         return self.controller.status
 
     @property
-    def progress_reporter(self) -> ProgressReporter | None:
-        return self.controller.progress_reporter
+    def progress_reporter(self) -> ProgressReporter:
+        return self.controller.progress_reporter or get_sota_progress()
 
     @progress_reporter.setter
     def progress_reporter(self, reporter: ProgressReporter | None) -> None:
@@ -118,12 +119,12 @@ class SOTADownloadManager(Downloader):
     def __enter__(self) -> "SOTADownloadManager":
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         pass
 
     # ---------- Internal Helpers ----------
 
-    def _progress_hook(self, d: dict) -> None:
+    def _progress_hook(self, d: dict[str, Any]) -> None:
         """
         yt‑dlp progress hook that updates the Rich progress bar.
         """
@@ -139,7 +140,7 @@ class SOTADownloadManager(Downloader):
             filename = d.get("filename", "Media File")
             clean_title = Path(filename).stem.rsplit(".", 1)[0][:40]
 
-            self.controller.progress_reporter.update(
+            self.progress_reporter.update(
                 self.controller.current_task_id,
                 description=f"[{THEME}]{clean_title}...",
                 total=total if total > 0 else None,
@@ -148,7 +149,7 @@ class SOTADownloadManager(Downloader):
             )
 
         elif status == "finished":
-            self.controller.progress_reporter.update(
+            self.progress_reporter.update(
                 self.controller.current_task_id,
                 description="[bold green]Processing metadata & merging...",
                 status="processing",

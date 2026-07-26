@@ -1,3 +1,4 @@
+from pathlib import Path
 import pytest
 from unittest.mock import MagicMock, patch
 from infrastructure.yt_dlp_wrapper import YtDlpEngine, YtDlpError
@@ -5,18 +6,18 @@ from yt_dlp.utils import DownloadError
 
 
 @pytest.fixture
-def engine():
+def engine() -> YtDlpEngine:
     return YtDlpEngine(use_aria2c=False)
 
 
-def test_get_opts_defaults(engine):
+def test_get_opts_defaults(engine: YtDlpEngine) -> None:
     opts = engine.get_opts()
     assert opts["format"] == "bestvideo+bestaudio/best"
     assert opts["quiet"] is True
     assert "external_downloader" not in opts
 
 
-def test_get_opts_with_extra(engine):
+def test_get_opts_with_extra(engine: YtDlpEngine) -> None:
     extra = {"foo": "bar"}
     opts = engine.get_opts(extra_opts=extra)
     assert opts["foo"] == "bar"
@@ -24,7 +25,9 @@ def test_get_opts_with_extra(engine):
 
 
 @patch("infrastructure.yt_dlp_wrapper.yt_dlp.YoutubeDL")
-def test_download_success(mock_ydl_class, engine, tmp_path):
+def test_download_success(
+    mock_ydl_class: MagicMock, engine: YtDlpEngine, tmp_path: Path
+) -> None:
     # Setup mock to behave like a context manager that holds a mock object
     mock_ydl = MagicMock()
     mock_ydl_class.return_value.__enter__.return_value = mock_ydl
@@ -35,7 +38,7 @@ def test_download_success(mock_ydl_class, engine, tmp_path):
 
     # The engine sets the progress_hooks on the opts dictionary passed to
     # YoutubeDL constructor. We need to capture those opts and invoke the hook
-    def side_effect(urls):
+    def side_effect(urls: list[str]) -> None:
         # Capture the opts dictionary used to initialize YoutubeDL
         opts = mock_ydl_class.call_args[0][0]
         # Invoke the progress hook provided in the opts
@@ -51,7 +54,9 @@ def test_download_success(mock_ydl_class, engine, tmp_path):
 
 
 @patch("infrastructure.yt_dlp_wrapper.yt_dlp.YoutubeDL")
-def test_download_failure(mock_ydl_class, engine, tmp_path):
+def test_download_failure(
+    mock_ydl_class: MagicMock, engine: YtDlpEngine, tmp_path: Path
+) -> None:
     mock_ydl = MagicMock()
     mock_ydl_class.return_value.__enter__.return_value = mock_ydl
 
@@ -62,7 +67,9 @@ def test_download_failure(mock_ydl_class, engine, tmp_path):
 
 
 @patch("infrastructure.yt_dlp_wrapper.yt_dlp.YoutubeDL")
-def test_download_missing_file_error(mock_ydl_class, engine, tmp_path):
+def test_download_missing_file_error(
+    mock_ydl_class: MagicMock, engine: YtDlpEngine, tmp_path: Path
+) -> None:
     mock_ydl = MagicMock()
     mock_ydl_class.return_value.__enter__.return_value = mock_ydl
 
