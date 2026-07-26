@@ -1,4 +1,4 @@
-# Python artifacts & Virtual Environments
+# Python Bytecode & Environments
 __pycache__/
 *.py[cod]
 *$py.class
@@ -10,31 +10,48 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-.pytest_cache/
-.tox/
-.coverage
-*.pyc
 
-# yt-dlp Caches, Credentials & Fragments
-.yt-dlp/
+# Testing, Coverage & Type Checkers
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# Sensitive Data, Cookies & Credentials
 *.cookie
 *.cookies
+cookies.txt
+*.pem
+*.key
+.env
+
+# yt-dlp Caches, Fragments & Temporary Downloads
+.yt-dlp/
 *.part
 *.ytdl
-cookies.txt
 
-# Downloaded Media & Test Outputs
+# Media Output & Local Test Assets
 *.mp4
 *.mp3
+*.mkv
 *.webm
 *.m4a
+*.flac
+*.wav
 test_output/
 
-# OS Files & Local Project / AI Files
+# OS, IDE & AI Workspace Files
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
 .gemini/
-plan1.txt
+
+# Local Scratchpad & Temporary Scripts
+modification.txt
 test_import.py
-uv.lock
-GEMINI.md
+*.log
+*.tmp
