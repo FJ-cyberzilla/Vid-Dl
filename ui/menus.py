@@ -6,21 +6,17 @@ from typing import Any
 from collections.abc import Callable
 
 from rich.prompt import Prompt
-from rich.panel import Panel
-from rich.table import Table
 
 import config.settings
-from config.colors import THEME, MUTED, ACCENT, TEXT, ERROR
+from config.colors import THEME, MUTED, ERROR
 from config.settings import check_ffmpeg, get_download_path
-# Import specific classes to avoid circular imports if possible
-# or re-order if necessary.
-# The error suggests circularity between ui/menus <-> core/download_manager
 
 from core.protocols import DownloadOptions, DownloadResult
 from core.download_service import DownloadService
 from utils.validators import is_valid_input
 from ui.banners import render_main_banner, print_error, print_success, console
 from ui.prompts import get_quality_choice
+import ui.menu_renderer as menu_renderer
 
 
 # Factory to break circularity
@@ -71,27 +67,11 @@ def _update_download_path() -> None:
 def _handle_settings() -> None:
     """Handle the settings menu with a clean panel."""
     while True:
-        settings_table = Table(box=None, show_header=False, padding=(0, 1))
-        settings_table.add_column("ID", justify="right", style=ACCENT)
-        settings_table.add_column("Option", style=TEXT)
-
-        settings_table.add_row("1", "UPDATE COOKIES DATASOURCE")
-        settings_table.add_row("2", "OVERRIDE DOWNLOAD PATH")
-        settings_table.add_row("3", "AUTO-EXTRACT COOKIES (CHROME)")
-        settings_table.add_row("4", "RETURN TO COMMAND CENTER")
-
-        console.print(
-            Panel(
-                f"[dim]SOURCE:[/dim] {config.settings.COOKIES_PATH}\n"
-                f"[dim]TARGET:[/dim] {config.settings.get_download_path()}\n\n",
-                title=f"[bold {THEME}]SYSTEM CONFIGURATION[/]",
-                border_style=THEME,
-                padding=(1, 2),
-            )
+        menu_renderer.render_settings_menu(
+            config.settings.COOKIES_PATH, config.settings.get_download_path()
         )
-        console.print(Panel(settings_table, border_style=MUTED, padding=(1, 2)))
 
-        choice = Prompt.ask(f"[{THEME}]Select Option[/]", choices=["1", "2", "3", "4"])
+        choice = menu_renderer.get_menu_selection("Select Option", ["1", "2", "3", "4"])
         if choice == "1":
             _update_cookies()
         elif choice == "2":
@@ -112,50 +92,12 @@ def _handle_settings() -> None:
 
 def _render_dashboard(output_path: Path) -> None:
     """Render the main menu dashboard."""
-    render_main_banner()
-
-    # Dashboard layout: Info and Menu in a structured grid
-    dashboard = Table(box=None, expand=True, padding=(0, 0))
-    dashboard.add_column(justify="center")
-
-    # Display route information in a compact panel
-    info_panel = Panel(
-        f"[bold {ACCENT}]STORAGE :[/] [white]{output_path}[/]\n"
-        f"[bold {ACCENT}]COOKIES :[/] [white]{config.settings.COOKIES_PATH}[/]",
-        border_style=MUTED,
-        padding=(0, 2),
-        title=f"[bold {THEME}]SYSTEM STATUS[/]",
-    )
-
-    # Main Menu Table for better alignment
-    menu_table = Table(box=None, show_header=False, padding=(0, 1))
-    menu_table.add_column("ID", justify="right", style=ACCENT)
-    menu_table.add_column("Command", style=f"bold {TEXT}")
-
-    menu_table.add_row("1", "EXTRACT VIDEO STREAM (MP4/MKV)")
-    menu_table.add_row("2", "EXTRACT AUDIO STREAM (MP3/M4A)")
-    menu_table.add_row("3", "CONFIGURE SYSTEM PARAMETERS")
-    menu_table.add_row("4", "TERMINATE SESSION")
-
-    menu_panel = Panel(
-        menu_table,
-        title=f"[bold {THEME}]PRIMARY COMMANDS[/]",
-        border_style=THEME,
-        padding=(1, 2),
-    )
-
-    dashboard.add_row(info_panel)
-    dashboard.add_row(menu_panel)
-
-    console.print(dashboard)
+    menu_renderer.render_dashboard(output_path)
 
 
 def _handle_menu_selection() -> str:
     """Prompt the user for a menu selection."""
-    return Prompt.ask(
-        f"[{THEME}]Execute Command[/]",
-        choices=["1", "2", "3", "4"],
-    )
+    return menu_renderer.get_menu_selection("Execute Command", ["1", "2", "3", "4"])
 
 
 def _execute_download(choice: str, target: str, output_path: Path) -> None:

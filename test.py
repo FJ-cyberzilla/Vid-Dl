@@ -14,6 +14,7 @@ def run_radon(cmd):
     try:
         # radon supports json output for many commands, which is safer
         import shlex
+
         result = subprocess.run(  # noqa: S603
             shlex.split(cmd + " --json"), capture_output=True, text=True
         )

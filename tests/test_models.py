@@ -17,9 +17,7 @@ def test_download_options_defaults():
 
 def test_download_result_success(tmp_path):
     temp_path = tmp_path / "file.mp4"
-    result = DownloadResult(
-        status=DownloadStatus.COMPLETED, file_path=temp_path
-    )
+    result = DownloadResult(status=DownloadStatus.COMPLETED, file_path=temp_path)
     assert result.status == DownloadStatus.COMPLETED
     assert result.file_path == temp_path
 
