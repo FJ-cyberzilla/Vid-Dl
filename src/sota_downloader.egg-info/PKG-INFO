@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: sota-downloader
+Version: 3.0.1
+Summary: A modular, terminal-based media extraction tool optimized for Android/Termux.
+Requires-Python: >=3.10
+Requires-Dist: yt-dlp>=2026.07.04
+Requires-Dist: rich>=13.7.1
+Requires-Dist: mutagen>=1.47.0
+Requires-Dist: pydantic>=2.8.2
+Requires-Dist: tenacity>=8.5.0
+Requires-Dist: requests>=2.32.3

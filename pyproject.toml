@@ -17,11 +17,14 @@ dependencies = [
 ]
 
 [project.scripts]
-sota = "main:main_menu"
+sota = "sota_dl.main:main_menu"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["sota_dl*"]
 
 [tool.setuptools]
-packages = ["config", "core", "infrastructure", "ui", "utils"]
-py-modules = ["main"]
+py-modules = ["sota_dl.main"]
 
 [tool.ruff]
 line-length = 88

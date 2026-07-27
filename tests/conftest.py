@@ -1,9 +1,9 @@
 import pytest
 from unittest.mock import MagicMock
 from pathlib import Path
-from core.protocols import Downloader, ProgressReporter
-from core.fallback import FallbackDownloader
-from core.controller import DownloadController
+from sota_dl.core.protocols import Downloader, ProgressReporter
+from sota_dl.core.fallback import FallbackDownloader
+from sota_dl.core.controller import DownloadController
 
 
 @pytest.fixture
