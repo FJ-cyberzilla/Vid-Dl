@@ -59,7 +59,6 @@ class SOTADownloadManager(Downloader):
         logger.info("Shutdown event received. Cleaning up...")
         self.cancel()
 
-
     def execute(
         self, target: str, options: DownloadOptions | None = None
     ) -> DownloadResult:

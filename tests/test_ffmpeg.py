@@ -8,20 +8,20 @@ from infrastructure.adapters.ffmpeg import (
     FFmpegNotFoundError,
     FFmpegProcessError,
     FFmpegTimeoutError,
-    _parse_time,
+    parse_time,
 )
 
 
 def test_parse_time() -> None:
     assert (
-        _parse_time(
+        parse_time(
             "frame=  100 fps= 25 q=-1.0 Lsize=    1000kB time=00:00:04.00 "
             "bitrate=2000.0kbits/s speed=1.0x"
         )
         == 4.0
     )
-    assert _parse_time("time=01:02:03.45") == 3600 + 120 + 3.45
-    assert _parse_time("no time here") is None
+    assert parse_time("time=01:02:03.45") == 3600 + 120 + 3.45
+    assert parse_time("no time here") is None
 
 
 @pytest.fixture

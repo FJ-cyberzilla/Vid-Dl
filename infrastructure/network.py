@@ -91,7 +91,6 @@ class NetworkManager:
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(None, func, *args, **kwargs)
 
-
     @staticmethod
     def _build_session(
         proxy: str | None,

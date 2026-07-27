@@ -45,6 +45,7 @@ module = [
     "yt_dlp",
     "yt_dlp.utils",
     "pywidevine.*",
-    "video_download_drm"
+    "video_download_drm",
+    "browser_cookie3"
 ]
 ignore_missing_imports = true

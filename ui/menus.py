@@ -20,6 +20,7 @@ from core.protocols import DownloadOptions, DownloadResult
 from core.download_service import DownloadService
 from utils.validators import is_valid_input
 from ui.banners import render_main_banner, print_error, print_success, console
+from ui.prompts import get_quality_choice
 
 
 # Factory to break circularity
@@ -27,62 +28,6 @@ def _get_downloader_factory() -> Callable[..., Any]:
     from composition_root import create_sota_manager
 
     return create_sota_manager
-
-
-def _get_audio_quality() -> str:
-    """Prompt for audio quality."""
-    table = Table(box=None, padding=(0, 1))
-    table.add_column("Option", justify="right", style=ACCENT)
-    table.add_column("Description", style=TEXT)
-    table.add_row("1", "High-Fidelity Audio (320kbps)")
-    table.add_row("2", "Standard Audio (192kbps)")
-    table.add_row("3", "Compact Audio (128kbps)")
-    
-    console.print(
-        Panel(
-            table,
-            title=f"[bold {THEME}]AUDIO ENGINE CONFIGURATION[/]",
-            border_style=THEME,
-            padding=(1, 2),
-        )
-    )
-    q_choice = Prompt.ask(
-        f"[{THEME}]Select Grade[/]",
-        choices=["1", "2", "3"],
-        default="1",
-    )
-    return {"1": "320", "2": "192", "3": "128"}[q_choice]
-
-def _get_video_quality() -> str:
-    """Prompt for video quality."""
-    table = Table(box=None, padding=(0, 1))
-    table.add_column("Option", justify="right", style=ACCENT)
-    table.add_column("Description", style=TEXT)
-    table.add_row("1", "Ultra High Definition (1080p+)")
-    table.add_row("2", "High Definition (720p)")
-    table.add_row("3", "Standard Definition (480p)")
-    
-    console.print(
-        Panel(
-            table,
-            title=f"[bold {THEME}]VIDEO STREAM CONFIGURATION[/]",
-            border_style=THEME,
-            padding=(1, 2),
-        )
-    )
-    q_choice = Prompt.ask(
-        f"[{THEME}]Select Grade[/]",
-        choices=["1", "2", "3"],
-        default="1",
-    )
-    return {"1": "best", "2": "720", "3": "480"}[q_choice]
-
-def _get_quality_choice(is_audio: bool) -> str:
-    """
-    Prompt the user for quality selection using a clean panel.
-    """
-    console.print("\n")
-    return _get_audio_quality() if is_audio else _get_video_quality()
 
 
 def _handle_results(results: list[DownloadResult], output_path: Path) -> None:
@@ -153,6 +98,7 @@ def _handle_settings() -> None:
             _update_download_path()
         elif choice == "3":
             from infrastructure.adapters.browser_cookies import BrowserCookieAdapter
+
             cookies = BrowserCookieAdapter.get_cookies_for_url(
                 "youtube.com"
             )  # Extract cookies for target site
@@ -215,7 +161,7 @@ def _handle_menu_selection() -> str:
 def _execute_download(choice: str, target: str, output_path: Path) -> None:
     """Execute download process."""
     is_audio = choice == "2"
-    quality = _get_quality_choice(is_audio)
+    quality = get_quality_choice(is_audio)
 
     download_options = DownloadOptions(
         quality=quality,
@@ -253,9 +199,11 @@ def _process_exit() -> None:
     console.print(f"\n[bold {ERROR}]Session terminated. Goodbye hacker![/]")
     sys.exit(0)
 
+
 def _process_settings() -> None:
     """Handle settings menu."""
     _handle_settings()
+
 
 def _process_download(choice: str, output_path: Path) -> None:
     """Handle media download process."""
@@ -268,6 +216,7 @@ def _process_download(choice: str, output_path: Path) -> None:
         return
 
     _execute_download(choice, target, output_path)
+
 
 def _process_command(choice: str, output_path: Path) -> None:
     """Process the selected command."""

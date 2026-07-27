@@ -6,6 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def verify_system_dependencies() -> None:
     """Verifies that mandatory system binaries are installed."""
     missing = []

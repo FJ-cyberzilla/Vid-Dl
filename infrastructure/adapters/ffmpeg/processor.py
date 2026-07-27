@@ -4,55 +4,21 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from .exceptions import (
+    FFmpegError,
+    FFmpegNotFoundError,
+    FFmpegProcessError,
+    FFmpegTimeoutError,
+)
+from .parser import parse_time
+
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Custom exceptions
-# ---------------------------------------------------------------------------
-class FFmpegError(Exception):
-    """Base exception for FFmpeg processing failures."""
-
-
-class FFmpegNotFoundError(FFmpegError):
-    """FFmpeg binary not found or not executable."""
-
-
-class FFmpegProcessError(FFmpegError):
-    """FFmpeg process returned a non‑zero exit code."""
-
-    def __init__(self, message: str, stderr: str = ""):
-        super().__init__(message)
-        self.stderr = stderr
-
-
-class FFmpegTimeoutError(FFmpegError):
-    """Operation timed out."""
-
-
-# ---------------------------------------------------------------------------
-# Progress parser for FFmpeg stderr
-# ---------------------------------------------------------------------------
-_FFMPEG_TIME_RE = re.compile(r"time=(\d{2}:\d{2}:\d{2}\.\d{2})")
-
-
-def _parse_time(line: str) -> float | None:
-    """Extract current processing time in seconds from an ffmpeg stderr line."""
-    match = _FFMPEG_TIME_RE.search(line)
-    if not match:
-        return None
-    h, m, s = match.group(1).split(":")
-    return float(h) * 3600 + float(m) * 60 + float(s)
-
-
-# ---------------------------------------------------------------------------
-# FFmpegProcessor
-# ---------------------------------------------------------------------------
 class FFmpegProcessor:
     """
     A modern, async‑first FFmpeg wrapper.
@@ -61,13 +27,6 @@ class FFmpegProcessor:
         ffmpeg_path: Path or name of the ffmpeg binary. Defaults to ``"ffmpeg"``.
         ffprobe_path: Path or name of the ffprobe binary. Defaults to ``"ffprobe"``.
         default_timeout: Default timeout (seconds) for operations. ``None`` = no limit.
-
-    Usage:
-        proc = FFmpegProcessor()
-        await proc.merge_audio_video(
-            Path("video.mp4"), Path("audio.aac"), Path("out.mp4"),
-            progress_callback=lambda t: print(f"Processed {t:.1f}s")
-        )
     """
 
     def __init__(
@@ -152,7 +111,7 @@ class FFmpegProcessor:
                         line = line_bytes.decode("utf-8", errors="replace").rstrip()
                         stderr_lines.append(line)
                         if progress_callback:
-                            t = _parse_time(line)
+                            t = parse_time(line)
                             if t is not None:
                                 # Fire callback for each valid time update
                                 await asyncio.get_event_loop().run_in_executor(
@@ -309,18 +268,3 @@ class FFmpegProcessor:
                 timeout=timeout,
             )
         )
-
-
-# ---------------------------------------------------------------------------
-# Quick self‑test
-# ---------------------------------------------------------------------------
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    proc = FFmpegProcessor()
-
-    async def _check_via_test() -> None:
-        """Run a quick verification that FFmpeg is reachable."""
-        await proc.check_ffmpeg()
-        print("FFmpegProcessor is ready.")
-
-    asyncio.run(_check_via_test())

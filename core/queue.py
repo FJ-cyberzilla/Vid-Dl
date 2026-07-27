@@ -168,7 +168,7 @@ class PriorityDownloadQueue:
             item.state = state
             if error_message:
                 item.error_message = error_message
-            
+
             if self._repository:
                 self._repository.save_item(item)
 

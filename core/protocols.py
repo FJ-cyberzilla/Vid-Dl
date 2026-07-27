@@ -3,7 +3,11 @@
 from typing import Protocol, Any
 from collections.abc import Callable
 from typing import TypeAlias
-from core.models import DownloadOptions, DownloadResult, DownloadStatus  # noqa: F401
+from core.models import (
+    DownloadOptions as DownloadOptions,
+    DownloadResult as DownloadResult,
+    DownloadStatus as DownloadStatus,
+)  # noqa: F401
 
 # ---------- Progress Reporting ----------
 TaskID: TypeAlias = int

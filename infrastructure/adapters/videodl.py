@@ -93,7 +93,6 @@ class VideoDLFallback:
         self.timeout = timeout
         self.network_client = NetworkClient()
 
-
     # ------------------------------------------------------------------
     # Validation
     # ------------------------------------------------------------------

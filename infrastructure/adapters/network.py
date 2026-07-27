@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 # Basic rate limiter
 _RATE_LIMITER = asyncio.Semaphore(5)  # Max 5 concurrent requests
 
+
 class NetworkClient:
     """Centralized client for network requests with rate limiting and headers."""
 
@@ -28,8 +29,10 @@ class NetworkClient:
         """Perform a throttled GET request."""
         async with _RATE_LIMITER:
             logger.debug("Requesting URL: %s", url)
+            timeout = kwargs.pop("timeout", 10)
+            headers = {**self.headers, **kwargs.pop("headers", {})}
             # Using run_in_executor because requests is blocking
             return await asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: requests.get(url, headers=self.headers, timeout=10, **kwargs),
+                lambda: requests.get(url, headers=headers, timeout=timeout, **kwargs),
             )

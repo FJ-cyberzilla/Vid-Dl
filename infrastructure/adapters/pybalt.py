@@ -3,16 +3,34 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
-import logging
-import time
+import shutil
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
+from infrastructure.logger import setup_logger
+
+logger = setup_logger("adapters.pybalt")
+
+# Handle optional dependencies
+try:
+    from pybalt.core.exceptions import CobaltError
+    from pybalt import StatusParent
+except ImportError:
+    # Define stubs if not available
+    class CobaltError(Exception):
+        """Stub for CobaltError."""
+
+    class StatusParent:
+        """Stub for StatusParent."""
 
 
 # ---------------------------------------------------------------------------
@@ -39,29 +57,21 @@ class ExtractionTimeoutError(ExtractionError):
 # ---------------------------------------------------------------------------
 @dataclass
 class ExtractOptions:
-    """Configuration for a media extraction operation.
-
-    Attributes:
-        output_format: Desired file extension / format (e.g., "mp4").
-        progress_callback: Called periodically with a float percentage (0‑100).
-        headers: Extra HTTP headers to pass to the backend.
-        timeout: Maximum time (seconds) allowed for the entire extraction.
-        retries: Number of retries on transient failures.
-        quality: Preferred resolution, e.g., "720p", "best".
-        extract_audio: If True, attempt to extract only the audio stream.
-    """
+    """Configuration for a media extraction operation."""
 
     output_format: str = "mp4"
     progress_callback: Callable[[float], Any] | None = None
+    status_parent: Any | None = None  # Added for progress tracking
     headers: dict[str, str] = field(default_factory=dict)
     timeout: float | None = None
     retries: int = 3
     quality: str = "best"
     extract_audio: bool = False
+    dry_run: bool = False
 
 
 # ---------------------------------------------------------------------------
-# Abstract base – to be implemented by concrete backends (PyBalt, etc.)
+# Abstract base
 # ---------------------------------------------------------------------------
 class SocialMediaExtractor(ABC):
     """Abstract interface for social media extraction."""
@@ -86,86 +96,66 @@ class SocialMediaExtractor(ABC):
 
 
 # ---------------------------------------------------------------------------
-# PyBalt engine – concrete implementation placeholder
+# PyBalt engine – concrete implementation
 # ---------------------------------------------------------------------------
 class PyBaltEngine(SocialMediaExtractor):
-    """
-    Social media extractor powered by PyBalt (or any compatible backend).
+    """Social media extractor powered by PyBalt."""
 
-    Currently raises :class:`MissingDependencyError` if PyBalt is not installed.
-    Once the dependency is available, the stub logic in :meth:`_extract_impl`
-    should be replaced with actual PyBalt calls.
+    def __init__(self, pybalt_client: Any = None) -> None:
+        """Initialize with optional injected client."""
+        self._client = pybalt_client
+        if self._client is None:
+            try:
+                import pybalt
 
-    Usage (after implementation)::
-
-        engine = PyBaltEngine()
-        path = engine.extract(
-            "https://twitter.com/user/status/123",
-            Path("video.mp4"),
-            options=ExtractOptions(progress_callback=lambda p: print(f"{p:.0f}%")),
-        )
-    """
-
-    def __init__(self) -> None:
-        """Check for PyBalt availability; defer error to extraction time."""
-        self._pybalt_available = False
-        with contextlib.suppress(ImportError):
-            # Replace with real import when PyBalt is a real package
-            # import pybalt
-            # self._pybalt_available = True
-            pass
-
-    # ------------------------------------------------------------------
-    # Core logic
-    # ------------------------------------------------------------------
-    def _extract_impl(
-        self,
-        _url: str,
-        _output_path: Path,
-        _options: ExtractOptions,
-    ) -> Path:
-        """
-        Actual extraction logic. Implementation pending.
-        """
-        if not self._pybalt_available:
-            raise MissingDependencyError(
-                "PyBalt support requires additional dependencies.\n"
-                "Install with: pip install pybalt  # (package name may differ)"
-            )
-        # Example pseudo‑call to a hypothetical PyBalt library
-        # import pybalt
-        # with pybalt.Client(...) as client:
-        #     client.download(url, str(output_path), ...)
-        raise NotImplementedError("Real PyBalt extraction logic not yet implemented.")
-
-    # ------------------------------------------------------------------
-    # Public interface
-    # ------------------------------------------------------------------
-    def _attempt_extraction(
-        self,
-        url: str,
-        output_path: Path,
-        options: ExtractOptions,
-        attempt: int,
-    ) -> Path:
-        """Execute a single attempt."""
-        try:
-            return self._extract_impl(url, output_path, options)
-        except MissingDependencyError:
-            raise  # not transient
-        except ExtractionError as exc:
-            if attempt == options.retries:
-                raise
-            logger.warning(
-                "Extraction attempt %d failed: %s. Retrying...", attempt, exc
-            )
-            time.sleep(1.5 ** (attempt - 1))
-            raise  # Signal retry needed
+                self._client = pybalt
+            except ImportError:
+                self._client = None
 
     def _validate_input(self, url: str) -> None:
-        """Validate input."""
+        """Validate input URL."""
         if not isinstance(url, str) or not url.strip():
             raise UnsupportedPlatformError("URL must be a non‑empty string.")
+
+    async def _perform_extraction_async(
+        self, url: str, output_path: Path, options: ExtractOptions
+    ) -> Path:
+        """Internal async logic for extraction."""
+        if options.dry_run:
+            logger.info("Dry run: Skipping extraction for %s", url)
+            return output_path
+
+        if self._client is None:
+            raise MissingDependencyError("PyBalt library not found.")
+
+        try:
+            # Map options to pybalt
+            kwargs = {
+                "videoQuality": options.quality,
+                "remux": True,
+            }
+            if options.extract_audio:
+                kwargs["audioFormat"] = "mp3"
+
+            # Pass progress tracker if provided
+            if options.status_parent:
+                kwargs["status_parent"] = options.status_parent
+
+            # Perform download
+            # pybalt.download returns the path of the downloaded file
+            downloaded_path = await self._client.download(url, **kwargs)
+
+            # Move to target output_path
+            target_path = Path(downloaded_path)
+            shutil.move(str(target_path), str(output_path))
+
+            logger.info("Extracted %s to %s", url, output_path)
+            return output_path
+
+        except Exception as e:
+            if isinstance(e, CobaltError):
+                raise ExtractionError(f"PyBalt extraction failed: {e}") from e
+            raise ExtractionError(f"Unexpected extraction error: {e}") from e
 
     def extract(
         self,
@@ -173,20 +163,8 @@ class PyBaltEngine(SocialMediaExtractor):
         output_path: Path,
         options: ExtractOptions | None = None,
     ) -> Path:
-        """
-        Synchronously extract media from a social media URL.
-        """
-        options = options or ExtractOptions()
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        self._validate_input(url)
-
-        for attempt in range(1, options.retries + 1):
-            try:
-                return self._attempt_extraction(url, output_path, options, attempt)
-            except ExtractionError:
-                if attempt == options.retries:
-                    raise
-        raise ExtractionError("Unexpected retry loop exit.")
+        """Synchronously extract media."""
+        return asyncio.run(self.extract_async(url, output_path, options))
 
     async def extract_async(
         self,
@@ -194,17 +172,16 @@ class PyBaltEngine(SocialMediaExtractor):
         output_path: Path,
         options: ExtractOptions | None = None,
     ) -> Path:
-        """
-        Async wrapper around :meth:`extract`.
+        """Asynchronously extract media with retries."""
+        options = options or ExtractOptions()
+        self._validate_input(url)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        Runs the blocking extraction in a thread pool so it doesn't block
-        the event loop.
-        """
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            self.extract,
-            url,
-            output_path,
-            options,
+        retryer = retry(
+            stop=stop_after_attempt(options.retries),
+            wait=wait_exponential(multiplier=1, min=2, max=10),
+            retry=retry_if_exception_type(ExtractionError),
+            reraise=True,
         )
+
+        return await retryer(self._perform_extraction_async)(url, output_path, options)

@@ -1,0 +1,37 @@
+from pathlib import Path
+from core.models import (
+    DownloadOptions,
+    DownloadResult,
+    VideoMetadata,
+    DownloadTask,
+    DownloadStatus,
+)
+
+
+def test_download_options_defaults():
+    options = DownloadOptions()
+    assert options.quality == "best"
+    assert options.retries == 3
+    assert options.output_dir == Path(".")
+
+
+def test_download_result_success(tmp_path):
+    temp_path = tmp_path / "file.mp4"
+    result = DownloadResult(
+        status=DownloadStatus.COMPLETED, file_path=temp_path
+    )
+    assert result.status == DownloadStatus.COMPLETED
+    assert result.file_path == temp_path
+
+
+def test_video_metadata_validation():
+    metadata = VideoMetadata(title="Test", url="http://test.com")
+    assert metadata.title == "Test"
+    assert metadata.url == "http://test.com"
+
+
+def test_download_task_creation(tmp_path):
+    metadata = VideoMetadata(title="Test", url="http://test.com")
+    task = DownloadTask(task_id="1", metadata=metadata, save_path=str(tmp_path))
+    assert task.task_id == "1"
+    assert task.status == DownloadStatus.PENDING

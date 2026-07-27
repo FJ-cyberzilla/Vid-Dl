@@ -12,7 +12,7 @@ def test_environment_detection() -> None:
     with patch("platform.system", return_value="Windows"):
         assert SystemInfo.is_linux() is False
 
-    with patch.object(SystemInfo, "is_linux", return_value=True):
+    with patch("infrastructure.system_components.env.is_linux", return_value=True):
         with patch.dict(os.environ, {"TERMUX_VERSION": "0.118"}):
             assert SystemInfo.is_termux() is True
             assert SystemInfo.is_android() is True
@@ -40,13 +40,17 @@ def test_os_info() -> None:
 
 
 def test_cpu_usage_no_psutil() -> None:
-    with patch("infrastructure.system._PSUTIL_AVAILABLE", False):
+    with patch(
+        "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", False
+    ):
         assert SystemInfo.get_cpu_usage() == -1.0
         assert SystemInfo.get_per_cpu_usage() == []
 
 
 def test_cpu_usage_with_psutil() -> None:
-    with patch("infrastructure.system._PSUTIL_AVAILABLE", True):
+    with patch(
+        "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", True
+    ):
         with patch("psutil.cpu_percent", return_value=50.0):
             assert SystemInfo.get_cpu_usage() == 50.0
         with patch("psutil.cpu_percent", return_value=[40.0, 60.0]):
@@ -55,13 +59,15 @@ def test_cpu_usage_with_psutil() -> None:
 
 def test_cpu_count() -> None:
     with (
-        patch("infrastructure.system._PSUTIL_AVAILABLE", True),
+        patch("infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", True),
         patch("psutil.cpu_count", return_value=4),
     ):
         assert SystemInfo.get_cpu_count() == 4
 
     with (
-        patch("infrastructure.system._PSUTIL_AVAILABLE", False),
+        patch(
+            "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", False
+        ),
         patch("os.cpu_count", return_value=2),
     ):
         assert SystemInfo.get_cpu_count() == 2
@@ -70,7 +76,9 @@ def test_cpu_count() -> None:
 def test_load_average_fallback() -> None:
     mock_data = "0.10 0.20 0.30 1/100 1234"
     with (
-        patch("infrastructure.system._PSUTIL_AVAILABLE", False),
+        patch(
+            "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", False
+        ),
         patch("builtins.open", mock_open(read_data=mock_data)),
     ):
         assert SystemInfo.get_load_average() == (0.1, 0.2, 0.3)
@@ -79,7 +87,9 @@ def test_load_average_fallback() -> None:
 def test_memory_usage_fallback() -> None:
     mock_data = "MemTotal: 1000000 kB\nMemAvailable: 400000 kB\n"
     with (
-        patch("infrastructure.system._PSUTIL_AVAILABLE", False),
+        patch(
+            "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", False
+        ),
         patch("builtins.open", mock_open(read_data=mock_data)),
     ):
         mem = SystemInfo.get_memory_usage()
@@ -90,7 +100,9 @@ def test_memory_usage_fallback() -> None:
 
 def test_disk_usage_fallback() -> None:
     with (
-        patch("infrastructure.system._PSUTIL_AVAILABLE", False),
+        patch(
+            "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", False
+        ),
         patch("shutil.disk_usage") as mock_disk,
     ):
         mock_disk.return_value = MagicMock(total=1000, used=400, free=600)
@@ -109,8 +121,10 @@ def test_temperatures_fallback(tmp_path: Path) -> None:
     (zone_dir / "temp").write_text("45000\n", encoding="utf-8")
 
     with (
-        patch("infrastructure.system._PSUTIL_AVAILABLE", False),
-        patch("infrastructure.system.Path") as mock_path_cls,
+        patch(
+            "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", False
+        ),
+        patch("infrastructure.system_components.temperatures.Path") as mock_path_cls,
     ):
         # Patch Path("/sys/class/thermal") inside get_temperatures
         # to use our tmp_path thermal_dir
@@ -127,7 +141,9 @@ def test_temperatures_fallback(tmp_path: Path) -> None:
 
 def test_battery_fallback() -> None:
     with (
-        patch("infrastructure.system._PSUTIL_AVAILABLE", False),
+        patch(
+            "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", False
+        ),
         patch("pathlib.Path.is_dir", return_value=True),
         patch("pathlib.Path.is_file", return_value=True),
         patch("pathlib.Path.read_text") as mock_read,
@@ -140,7 +156,9 @@ def test_battery_fallback() -> None:
 
 def test_uptime_fallback() -> None:
     with (
-        patch("infrastructure.system._PSUTIL_AVAILABLE", False),
+        patch(
+            "infrastructure.system_components.psutil_helper._PSUTIL_AVAILABLE", False
+        ),
         patch("builtins.open", mock_open(read_data="12345.67 89012.34")),
     ):
         assert SystemInfo.get_uptime_seconds() == 12345.67
