@@ -35,7 +35,7 @@ BRAND     := $(BOLD)$(VIOLET)FJ™ Cyberzilla Systems$(RESET)
 ##@ 🚀 Execution
 run: ## Launch the application
 	@printf " $(ICON_NODE) $(CYAN)Launching $(APP_NAME)...$(RESET)\n\n"
-	@uv run python main.py
+	@PYTHONPATH=src uv run python -m sota_dl.main
 
 menu: ## Launch interactive command selector (fzf / select fallback)
 	@if command -v fzf >/dev/null 2>&1; then \
@@ -138,12 +138,12 @@ format: ## Format codebase with Ruff
 ##@ 🧪 Test & Build
 test: ## Run test suite with inline coverage
 	@printf " $(ICON_NODE) $(CYAN)Running tests...$(RESET)\n"
-	@PYTHONPATH=. uv run pytest --cov --cov-report=html --cov-report=term
+	@PYTHONPATH=src uv run pytest --cov --cov-report=html --cov-report=term
 
 coverage: ## View terminal coverage summary
 	@printf "\n $(BOLD)$(CYAN)── Coverage Report Summary ────────────────────────────────────$(RESET)\n"
 	@if [ -f htmlcov/index.html ]; then \
-		PYTHONPATH=. uv run pytest --cov --cov-report=term | tail -n 20; \
+		PYTHONPATH=src uv run pytest --cov --cov-report=term | tail -n 20; \
 		printf "\n $(ICON_WARN) $(AMBER)Full HTML Report:$(RESET) $(DIM)$(PWD)/htmlcov/index.html$(RESET)\n\n"; \
 	else \
 		printf " $(ICON_FAIL) $(ROSE)Report missing. Run $(BOLD)make test$(RESET) $(ROSE)first.$(RESET)\n\n"; \

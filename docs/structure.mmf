@@ -1,49 +1,30 @@
 graph TD
-    A[Vid-Dl Root] --> B[config/]
-    A --> C[core/]
-    A --> D[ui/]
-    A --> E[utils/]
+    A[Vid-Dl Root] --> S[src/]
+    S --> B[sota_dl/]
+    B --> B_CONF[config/]
+    B --> B_CORE[core/]
+    B --> B_INFRA[infrastructure/]
+    B --> B_UI[ui/]
+    B --> B_UTIL[utils/]
+    B --> B_MAIN[main.py]
+
+    B_CORE --> B_CORE_MOD[models/]
+    
+    B_INFRA --> B_INFRA_ADP[adapters/]
+    B_INFRA --> B_INFRA_EXT[extensions/]
+    B_INFRA --> B_INFRA_MON[system_monitor.py]
+    
     A --> F[tests/]
-    A --> H[infrastructure/]
-    A --> G[main.py]
+    F --> F_CORE[core/]
+    F --> F_INFRA[infrastructure/]
+    F --> F_UI[ui/]
+    F --> F_UTIL[utils/]
+    F --> F_CONF[config/]
+    F --> F_INT[integration/]
+    
     A --> I[pyproject.toml]
     
-    B --> B1[colors.py]
-    B --> B2[settings.py]
-    
-    C --> C1[download_manager.py]
-    C --> C2[download_service.py]
-    C --> C3[protocols.py]
-    C --> C5[controller.py]
-    C --> C6[fallback.py]
-    C --> C7[event_bus.py]
-    C --> C8[extractor.py]
-    C --> C9[queue.py]
-    
-    H --> H1[adapters/]
-    H --> H2[aria2c.py]
-    H --> H3[cache.py]
-    H --> H4[errors.py]
-    H --> H5[ffmpeg.py]
-    H --> H6[file_system.py]
-    H --> H7[logger.py]
-    H --> H8[network.py]
-    H --> H9[system.py]
-    H --> H10[videodl.py]
-    
-    D --> D1[banners.py]
-    D --> D2[menus.py]
-    D --> D3[progress_bars.py]
-    
-    E --> E1[helpers.py]
-    E --> E2[validators.py]
-    E --> E3[concurrency.py]
-    E --> E4[retry.py]
-    
     style A fill:#FF6600,stroke:#333,stroke-width:2px,color:#fff
+    style S fill:#333,color:#fff
     style B fill:#333,color:#fff
-    style C fill:#333,color:#fff
-    style D fill:#333,color:#fff
-    style E fill:#333,color:#fff
     style F fill:#333,color:#fff
-    style H fill:#333,color:#fff

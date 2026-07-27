@@ -29,7 +29,7 @@
         <div class="max-w-4xl mx-auto flex flex-col items-center">
             
             <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2">
-                <span class="text-orange-500">Sota Vid-Dl</span>
+                <span class="text-orange-500">Sota Vid-Dl v3.2.7</span>
             </h1>
             
             <!-- Developer Tag -->
@@ -107,16 +107,11 @@
 
             <div class="bg-slate-950 p-5 rounded-xl border border-slate-800/80 overflow-x-auto font-mono text-xs text-slate-300 leading-relaxed">
                 <pre class="text-orange-400/90">├── Makefile
-├── composition_root.py
-├── <span class="text-indigo-400">config</span>/
-├── <span class="text-indigo-400">core</span>/ (controller, download_manager, download_service, event_bus, extractor, fallback, protocols, queue)
-├── <span class="text-indigo-400">doc</span>/
-├── <span class="text-indigo-400">infrastructure</span>/ (adapters, aria2c, cache, errors, ffmpeg, file_system, logger, network, system, videodl)
-├── <span class="text-slate-100">main.py</span>
+├── <span class="text-indigo-400">src</span>/
+│   └── <span class="text-indigo-400">sota_dl</span>/ (config, core, infrastructure, ui, utils)
+├── <span class="text-indigo-400">tests</span>/ (config, core, infrastructure, integration, ui, utils)
+├── <span class="text-indigo-400">docs</span>/
 ├── <span class="text-slate-100">pyproject.toml</span>
-├── <span class="text-indigo-400">tests</span>/
-├── <span class="text-indigo-400">ui</span>/
-├── <span class="text-indigo-400">utils</span>/ (concurrency, helpers, retry, validators)
 └── <span class="text-slate-100">uv.lock</span></pre>
             </div>
         </section>
