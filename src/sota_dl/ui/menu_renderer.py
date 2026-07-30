@@ -5,7 +5,16 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.prompt import Prompt
 
-from sota_dl.ui.colors import THEME, MUTED, ACCENT, TEXT
+from sota_dl.ui.colors import (
+    THEME,
+    MUTED,
+    ACCENT,
+    TEXT,
+    VINTAGE_RED,
+    VINTAGE_YELLOW,
+    VINTAGE_PINK,
+    VINTAGE_ORANGE,
+)
 from sota_dl.config.settings import COOKIES_PATH
 from sota_dl.ui.banners import render_main_banner, console
 
@@ -32,10 +41,10 @@ def render_dashboard(output_path: Path) -> None:
     menu_table.add_column("ID", justify="right", style=ACCENT)
     menu_table.add_column("Command", style=f"bold {TEXT}")
 
-    menu_table.add_row("1", "EXTRACT VIDEO STREAM (MP4/MKV)")
-    menu_table.add_row("2", "EXTRACT AUDIO STREAM (MP3/M4A)")
-    menu_table.add_row("3", "CONFIGURE SYSTEM PARAMETERS")
-    menu_table.add_row("4", "TERMINATE SESSION")
+    menu_table.add_row("1", f"[{VINTAGE_RED}]EXCERPT VIDEO STREAM (MP4/MKV)[/]")
+    menu_table.add_row("2", f"[{VINTAGE_YELLOW}]EXTRACT AUDIO STREAM (MP3/M4A)[/]")
+    menu_table.add_row("3", f"[{VINTAGE_PINK}]CONFIGURE SYSTEM PARAMETERS[/]")
+    menu_table.add_row("4", f"[{VINTAGE_ORANGE}]TERMINATE SESSION[/]")
 
     menu_panel = Panel(
         menu_table,
@@ -50,7 +59,9 @@ def render_dashboard(output_path: Path) -> None:
     console.print(dashboard)
 
 
-def render_settings_menu(cookies_path: Path, download_path: Path) -> None:
+def render_settings_menu(
+    cookies_path: Path, download_path: Path, timeout: int, debug: bool
+) -> None:
     """Render settings table."""
     settings_table = Table(box=None, show_header=False, padding=(0, 1))
     settings_table.add_column("ID", justify="right", style=ACCENT)
@@ -59,12 +70,16 @@ def render_settings_menu(cookies_path: Path, download_path: Path) -> None:
     settings_table.add_row("1", "UPDATE COOKIES DATASOURCE")
     settings_table.add_row("2", "OVERRIDE DOWNLOAD PATH")
     settings_table.add_row("3", "AUTO-EXTRACT COOKIES (CHROME)")
-    settings_table.add_row("4", "RETURN TO COMMAND CENTER")
+    settings_table.add_row("4", "UPDATE REQUEST TIMEOUT")
+    settings_table.add_row("5", "TOGGLE DEBUG MODE")
+    settings_table.add_row("6", "RETURN TO COMMAND CENTER")
 
     console.print(
         Panel(
-            f"[dim]SOURCE:[/dim] {cookies_path}\n"
-            f"[dim]TARGET:[/dim] {download_path}\n\n",
+            f"[dim]SOURCE :[/dim] {cookies_path}\n"
+            f"[dim]TARGET :[/dim] {download_path}\n"
+            f"[dim]TIMEOUT:[/dim] {timeout}s\n"
+            f"[dim]DEBUG  :[/dim] {'ON' if debug else 'OFF'}\n",
             title=f"[bold {THEME}]SYSTEM CONFIGURATION[/]",
             border_style=THEME,
             padding=(1, 2),
@@ -78,4 +93,5 @@ def get_menu_selection(prompt_text: str, choices: list[str]) -> str:
     return Prompt.ask(
         f"[{THEME}]{prompt_text}[/]",
         choices=choices,
+        show_choices=False,
     )

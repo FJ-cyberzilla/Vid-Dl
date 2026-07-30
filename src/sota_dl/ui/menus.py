@@ -16,7 +16,7 @@ import sota_dl.ui.download_handler as download_handler
 
 def _process_exit() -> None:
     """Handle session termination."""
-    console.print(f"\n[bold {ERROR}]Session terminated. Goodbye hacker![/]")
+    console.print(f"\n[bold {ERROR}]System Logged Off.[/]")
     sys.exit(0)
 
 
@@ -54,7 +54,7 @@ def launch_command_center() -> None:
         output_path = Path(get_download_path())
         menu_renderer.render_dashboard(output_path)
         options = ["1", "2", "3", "4"]
-        choice = menu_renderer.get_menu_selection("Execute Command", options)
+        choice = menu_renderer.get_menu_selection("choose an option", options)
         _process_command(choice, output_path)
 
 

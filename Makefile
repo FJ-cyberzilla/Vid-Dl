@@ -35,7 +35,7 @@ BRAND     := $(BOLD)$(VIOLET)FJ™ Cyberzilla Systems$(RESET)
 ##@ 🚀 Execution
 run: ## Launch the application
 	@printf " $(ICON_NODE) $(CYAN)Launching $(APP_NAME)...$(RESET)\n\n"
-	@PYTHONPATH=src uv run python -m sota_dl.main
+	@PYTHONPATH=src python3 -m sota_dl.main
 
 menu: ## Launch interactive command selector (fzf / select fallback)
 	@if command -v fzf >/dev/null 2>&1; then \
