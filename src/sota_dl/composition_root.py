@@ -13,7 +13,12 @@ def create_sota_manager(
     progress_reporter: ProgressReporter | None = None,
 ) -> DownloadService:
     """Factory to create a fully configured DownloadService."""
+
+    # MediaExtractor and other components currently unused in DownloadService
+    # are removed to pass linting.
+
     downloader = FallbackDownloader(backends=[YtDlpAdapter()])
+
     return DownloadService(
         downloader_backend=downloader,
         progress_reporter=progress_reporter or get_sota_progress(),

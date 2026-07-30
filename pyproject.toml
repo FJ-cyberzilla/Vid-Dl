@@ -14,8 +14,13 @@ dependencies = [
     "tenacity>=8.5.0",
     "requests>=2.32.3",
     "structlog>=24.4.0",
-    "platformdirs>=4.3.0"
+    "platformdirs>=4.3.0",
+    "cryptography>=49.0.0"
 ]
+
+[project.optional-dependencies]
+mobile = ["qrcode>=7.4.2"]
+ui = ["qrcode>=7.4.2"]
 
 [project.scripts]
 sota = "sota_dl.main:main_menu"
@@ -42,6 +47,8 @@ ignore = []
 [tool.mypy]
 python_version = "3.10"
 strict = true
+mypy_path = "src"
+explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 module = [
@@ -50,6 +57,10 @@ module = [
     "yt_dlp.utils",
     "pywidevine.*",
     "video_download_drm",
-    "browser_cookie3"
-]
+    "browser_cookie3",
+    "pybalt",
+    "pybalt.core.exceptions",
+    "win32crypt"
+    ]
+
 ignore_missing_imports = true

@@ -11,6 +11,8 @@ logger = structlog.get_logger(__name__)
 class OAuth2DeviceFlowService:
     """Service to handle the OAuth2 Device Authorization Flow."""
 
+    TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"  # noqa: S105
+
     def __init__(
         self,
         config_service: ConfigurationService,
@@ -62,7 +64,6 @@ class OAuth2DeviceFlowService:
     async def _poll_for_token(self, device_code: str) -> None:
         """Polls for authorization tokens."""
         logger.info("Polling for token")
-        token_url = "https://oauth2.googleapis.com/token"  # nosec
 
         payload = {
             "client_id": self._client_id,
@@ -75,7 +76,9 @@ class OAuth2DeviceFlowService:
         for _ in range(30):  # Adjust polling attempts as needed
             await asyncio.sleep(5)  # Poll interval
             try:
-                response = await self._network.post_async(token_url, data=payload)
+                response = await self._network.post_async(
+                    self.TOKEN_ENDPOINT, data=payload
+                )
                 if response.status_code == 200:
                     data = response.json()
                     logger.info("Successfully obtained tokens")

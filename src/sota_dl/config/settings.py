@@ -114,8 +114,10 @@ def check_ffmpeg(version_check: bool = True) -> bool:
         return True
 
     # Optional: verify version ≥ 4.0 (which supports most features)
+    if not shutil.which(ffmpeg_path):
+        return True
     try:
-        result = subprocess.run(  # nosec
+        result = subprocess.run(  # noqa: S603
             [ffmpeg_path, "-version"],
             capture_output=True,
             text=True,
