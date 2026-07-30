@@ -3,7 +3,7 @@
 import os
 import shutil
 import logging
-import subprocess
+import subprocess  # nosec
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -20,15 +20,14 @@ ENV_OVERRIDE = Path(_ENV_OVERRIDE).expanduser().absolute() if _ENV_OVERRIDE else
 # ---- Cache for writability checks ----
 _WRITABLE_CACHE: dict[Path, bool] = {}
 
-# ---- Cookies ----
-# Default to 'cookies.txt' in the project root (relative to this file's parent's parent)
-DEFAULT_COOKIES = Path(__file__).parent.parent / "cookies.txt"
-COOKIES_ENV_OVERRIDE = os.getenv("SOTA_COOKIES")
-
-if COOKIES_ENV_OVERRIDE:
-    COOKIES_PATH = Path(COOKIES_ENV_OVERRIDE).expanduser().absolute()
-else:
-    COOKIES_PATH = DEFAULT_COOKIES.absolute()
+# ---- OAuth Credentials ----
+OAUTH_CLIENT_ID = os.getenv("SOTA_OAUTH_CLIENT_ID", "")
+OAUTH_CLIENT_SECRET = os.getenv("SOTA_OAUTH_CLIENT_SECRET", "")
+ACCESS_TOKEN: str | None = None
+REFRESH_TOKEN: str | None = None
+COOKIES_PATH = Path("cookies.txt")
+TIMEOUT = 30
+DEBUG = False
 
 
 def _is_writable(path: Path) -> bool:
@@ -116,7 +115,7 @@ def check_ffmpeg(version_check: bool = True) -> bool:
 
     # Optional: verify version ≥ 4.0 (which supports most features)
     try:
-        result = subprocess.run(  # noqa: S603
+        result = subprocess.run(  # nosec
             [ffmpeg_path, "-version"],
             capture_output=True,
             text=True,
