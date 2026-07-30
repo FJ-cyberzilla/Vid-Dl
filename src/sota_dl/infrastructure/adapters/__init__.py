@@ -3,15 +3,16 @@ from .ffmpeg import FFmpegProcessor
 from .videodl import VideoDLFallback
 from .yt_dlp import YtDlpAdapter
 
-try:
-    from ..extensions.pybalt import PyBaltEngine
-except ImportError:
-    PyBaltEngine = None
+from typing import Any
+import contextlib
 
-try:
+PyBaltEngine: Any = None  # type: ignore[assignment, misc]
+with contextlib.suppress(ImportError):
+    from ..extensions.pybalt import PyBaltEngine
+
+WidevineDRM: Any = None  # type: ignore[assignment, misc]
+with contextlib.suppress(ImportError):
     from ..extensions.pywidevine import WidevineDRM
-except ImportError:
-    WidevineDRM = None
 
 __all__ = [
     "Aria2cClient",

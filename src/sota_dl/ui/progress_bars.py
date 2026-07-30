@@ -14,7 +14,7 @@ from rich.progress import (
     TransferSpeedColumn,
     TaskID as RichTaskID,
 )
-from sota_dl.config.colors import THEME, ACCENT, MUTED
+from sota_dl.ui.colors import THEME, ACCENT, MUTED
 from sota_dl.core.protocols import ProgressReporter, TaskID
 
 logger = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class RichProgressReporter(ProgressReporter):
             if v is not None
         }
         kwargs.update(extra)
-        self._progress.update(RichTaskID(task_id), **kwargs)
+        self._progress.update(RichTaskID(task_id), **kwargs)  # type: ignore[arg-type]
 
     def advance(self, task_id: TaskID, amount: float = 1.0) -> None:
         self._progress.advance(RichTaskID(task_id), advance=amount)

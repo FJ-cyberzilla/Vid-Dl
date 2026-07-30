@@ -1,8 +1,8 @@
-Sota Vid-Dl v3.2.7
+SOTA Vid-Dl v2.0.0
 High-Performance, Modular, and Resilient Media Extractor for Termux & Android > Maintained by FJ-Cyberzilla • FJ™ Cybertronic Systems
 
 🚀 Overview
-Sota Vid-Dl rejects the "bloatware" approach common in media download utilities. By utilizing a clean, modular structure following PEP 517 src/ layout and SOLID principles, it minimizes the system footprint, reduces error rates, and ensures that maintenance is surgical—not destructive. Optimized specifically for mobile environments like Termux on Android.
+SOTA Vid-Dl rejects the "bloatware" approach common in media download utilities. By utilizing a clean, modular structure following PEP 517 src/ layout and SOLID principles, it minimizes the system footprint, reduces error rates, and ensures that maintenance is surgical—not destructive. Optimized specifically for mobile environments like Termux on Android.
 
 🏛️ Architecture Philosophy
 - Domain Boundary Refactoring: Enforced strict separation of concerns across layers (CLI Layer → Orchestrator → Service Layer → Repository/Adapter).
@@ -39,7 +39,7 @@ Sota Vid-Dl rejects the "bloatware" approach common in media download utilities.
 - sota_dl/utils/: Helper functions and utilities.
 
 🛠️ Makefile Commands
-Sota Vid-Dl includes a streamlined Makefile for developer operations:
+SOTA Vid-Dl includes a streamlined Makefile for developer operations:
 
 make <command>
 
@@ -64,4 +64,4 @@ update | Update dependencies (uv lock --upgrade)
 - Cookies: Place your cookies.txt in a configured secure location to bypass authentication roadblocks.
 - Auto-Fallback: The system automatically falls back to the best available quality stream.
 
---- SOTA Vid-Dl v3.2.7 | FJ™ Cyberzilla ---
+--- SOTA Vid-Dl v2.0.0 | FJ™ Cyberzilla ---

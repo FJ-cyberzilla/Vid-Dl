@@ -24,38 +24,51 @@ EventHandler = Callable[[Event], Awaitable[None] | None]
 @dataclass(slots=True, frozen=True)
 class DownloadStartedEvent(Event):
     """Emitted when a download starts."""
+
     download_id: str
     url: str
+
 
 @dataclass(slots=True, frozen=True)
 class DownloadPausedEvent(Event):
     """Emitted when a download is paused."""
+
     download_id: str
+
 
 @dataclass(slots=True, frozen=True)
 class DownloadCancelledEvent(Event):
     """Emitted when a download is cancelled."""
+
     download_id: str
+
 
 @dataclass(slots=True, frozen=True)
 class DownloadCompletedEvent(Event):
     """Emitted when a download completes."""
+
     download_id: str
+
 
 @dataclass(slots=True, frozen=True)
 class DownloadFailedEvent(Event):
     """Emitted when a download fails."""
+
     download_id: str
     error: str
+
 
 @dataclass(slots=True, frozen=True)
 class BatchStartedEvent(Event):
     """Emitted when a batch download starts."""
+
     url_count: int
+
 
 @dataclass(slots=True, frozen=True)
 class BatchCompletedEvent(Event):
     """Emitted when a batch download completes."""
+
     total_processed: int
     failed_count: int
 

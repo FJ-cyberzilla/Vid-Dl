@@ -62,9 +62,7 @@ def async_retry(
             while True:
                 try:
                     return await func(*args, **kwargs)
-                except (
-                    cfg.retryable_exceptions
-                ) as exc:  # pylint: disable=catching-non-exception
+                except cfg.retryable_exceptions as exc:  # pylint: disable=catching-non-exception
                     attempt += 1
                     if attempt > cfg.retries:
                         raise

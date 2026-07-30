@@ -4,9 +4,14 @@ Automates secure extraction of cookies from local browser profiles.
 """
 
 import logging
+import typing
 from pathlib import Path
-import browser_cookie3
 from sota_dl.infrastructure.app_dirs import DATA_DIR
+
+try:
+    import browser_cookie3
+except ImportError:
+    browser_cookie3 = None
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +32,9 @@ class BrowserCookieAdapter:
         Returns:
             A dictionary of cookies.
         """
-        # 1. Try dynamic extraction
-        try:
-            cj = getattr(browser_cookie3, browser.lower())(domain_name=url)
-            cookies = {cookie.name: cookie.value for cookie in cj}
-            if cookies:
-                return cookies
-        except Exception as e:
-            logger.warning("Dynamic cookie extraction failed: %s", e)
+        cookies = BrowserCookieAdapter._try_dynamic_extraction(url, browser)
+        if cookies:
+            return cookies
 
         # 2. Fallback to secure local file
         cookie_file = DATA_DIR / "cookies.txt"
@@ -45,19 +45,41 @@ class BrowserCookieAdapter:
         return {}
 
     @staticmethod
+    def _try_dynamic_extraction(url: str, browser: str) -> dict[str, str]:
+        """Attempts to dynamically extract cookies from the specified browser."""
+        if browser_cookie3 is None:
+            logger.warning(
+                "browser_cookie3 not installed; skipping dynamic extraction."
+            )
+            return {}
+
+        try:
+            cj = getattr(browser_cookie3, browser.lower())(domain_name=url)
+            return {cookie.name: cookie.value for cookie in cj}
+        except Exception as e:
+            logger.warning("Dynamic cookie extraction failed: %s", e)
+            return {}
+
+    @staticmethod
     def _load_cookies_from_file(file_path: Path) -> dict[str, str]:
         """Loads Netscape-formatted cookies from a file."""
-        cookies = {}
         try:
             with file_path.open("r", encoding="utf-8") as f:
-                for line in f:
-                    if not line.strip() or line.startswith("#"):
-                        continue
-                    parts = line.split("\t")
-                    if len(parts) >= 7:
-                        # Netscape format: domain, flag, path, secure,
-                        # expiration, name, value
-                        cookies[parts[5]] = parts[6].strip()
+                return BrowserCookieAdapter._process_cookie_file(f)
         except Exception as e:
             logger.error("Failed to load cookies from %s: %s", file_path, e)
+            return {}
+
+    @staticmethod
+    def _process_cookie_file(file_handle: typing.TextIO) -> dict[str, str]:
+        """Parses a cookie file handle into a dictionary."""
+        cookies = {}
+        for line in file_handle:
+            if not line.strip() or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if len(parts) >= 7:
+                # Netscape format: domain, flag, path, secure,
+                # expiration, name, value
+                cookies[parts[5]] = parts[6].strip()
         return cookies

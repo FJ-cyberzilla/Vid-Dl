@@ -6,13 +6,13 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from sota_dl.config.colors import THEME, ACCENT, TEXT, ERROR, SUCCESS, MUTED
+from sota_dl.ui.colors import THEME, ACCENT, TEXT, ERROR, SUCCESS, MUTED
 from sota_dl.utils.helpers import clear_screen
 
 logger = logging.getLogger(__name__)
 
 # ---- Configurable constants (centralise later) ----
-__version__ = "3.0.1"
+__version__ = "2.0.0"
 TAGLINE = "Zero-Cookie OAuth • Metadata • Dynamic Batches"
 
 # Mutable container for the console instance (avolus 'global' statement)

@@ -108,12 +108,19 @@ def get_per_cpu_usage(interval: float = 1.0) -> list[float]:
 def get_cpu_count() -> int:
     """Return the number of logical CPUs."""
     if _PSUTIL_AVAILABLE and psutil:
-        try:
-            count = psutil.cpu_count(logical=True)
-            return int(count) if count is not None else os.cpu_count() or 1
-        except OSError as exc:
-            logger.debug("psutil cpu_count failed: %s", exc)
+        count = _get_cpu_count_psutil()
+        if count is not None:
+            return count
     return os.cpu_count() or 1
+
+
+def _get_cpu_count_psutil() -> int | None:
+    try:
+        count = psutil.cpu_count(logical=True)
+        return int(count) if count is not None else None
+    except OSError as exc:
+        logger.debug("psutil cpu_count failed: %s", exc)
+        return None
 
 
 def get_physical_cpu_count() -> int:
@@ -145,12 +152,22 @@ def get_cpu_frequency() -> dict[str, Any]:
 def get_load_average() -> tuple[float, float, float]:
     """Return the 1, 5, 15 minute load averages (Linux/Android)."""
     if _PSUTIL_AVAILABLE and psutil and hasattr(psutil, "getloadavg"):
-        try:
-            avg = psutil.getloadavg()
-            return (float(avg[0]), float(avg[1]), float(avg[2]))
-        except (OSError, AttributeError, IndexError) as exc:
-            logger.debug("psutil getloadavg failed: %s", exc)
-    # Fallback: read /proc/loadavg manually
+        avg = _get_load_average_psutil()
+        if avg:
+            return avg
+    return _get_load_average_fallback()
+
+
+def _get_load_average_psutil() -> tuple[float, float, float] | None:
+    try:
+        avg = psutil.getloadavg()
+        return (float(avg[0]), float(avg[1]), float(avg[2]))
+    except (OSError, AttributeError, IndexError) as exc:
+        logger.debug("psutil getloadavg failed: %s", exc)
+        return None
+
+
+def _get_load_average_fallback() -> tuple[float, float, float]:
     try:
         with open("/proc/loadavg", encoding="utf-8") as f:
             parts = f.read().strip().split()
@@ -170,18 +187,29 @@ def get_disk_usage(path: str | Path = "/") -> dict[str, float]:
 
     # Try psutil first
     if _PSUTIL_AVAILABLE and psutil:
-        try:
-            usage = psutil.disk_usage(target)
-            return {
-                "total": float(usage.total),
-                "used": float(usage.used),
-                "free": float(usage.free),
-                "percent": usage.percent,
-            }
-        except OSError as exc:
-            logger.debug("psutil disk_usage failed: %s", exc)
+        usage = _get_disk_usage_psutil(target)
+        if usage:
+            return usage
 
     # Fallback using shutil
+    return _get_disk_usage_shutil(target)
+
+
+def _get_disk_usage_psutil(target: str) -> dict[str, float] | None:
+    try:
+        usage = psutil.disk_usage(target)
+        return {
+            "total": float(usage.total),
+            "used": float(usage.used),
+            "free": float(usage.free),
+            "percent": usage.percent,
+        }
+    except OSError as exc:
+        logger.debug("psutil disk_usage failed: %s", exc)
+        return None
+
+
+def _get_disk_usage_shutil(target: str) -> dict[str, float]:
     disk = {"total": 0.0, "used": 0.0, "free": 0.0, "percent": 0.0}
     try:
         usage = shutil.disk_usage(target)
@@ -206,36 +234,33 @@ def get_disk_usage(path: str | Path = "/") -> dict[str, float]:
 
 def get_memory_usage() -> dict[str, float]:
     """Return a dict with ``total``, ``available``, ``percent``, ``used`` bytes."""
-    mem_info = {"total": 0.0, "available": 0.0, "percent": 0.0, "used": 0.0}
     if _PSUTIL_AVAILABLE and psutil:
-        try:
-            mem = psutil.virtual_memory()
-            mem_info.update(
-                {
-                    "total": float(mem.total),
-                    "available": float(mem.available),
-                    "percent": mem.percent,
-                    "used": float(mem.used),
-                }
-            )
-            return mem_info
-        except OSError as exc:
-            logger.debug("psutil virtual_memory failed: %s", exc)
+        mem = _get_memory_usage_psutil()
+        if mem:
+            return mem
+    return _get_memory_usage_fallback()
 
-    # Fallback /proc/meminfo
+
+def _get_memory_usage_psutil() -> dict[str, float] | None:
     try:
-        results = {"MemTotal": 0, "MemAvailable": 0}
-        with open("/proc/meminfo", encoding="utf-8") as f:
-            for line in f:
-                parts = line.split()
-                if not parts:
-                    continue
-                key = parts[0].replace(":", "")
-                if key in results:
-                    results[key] = int(parts[1]) * 1024
+        mem = psutil.virtual_memory()
+        return {
+            "total": float(mem.total),
+            "available": float(mem.available),
+            "percent": mem.percent,
+            "used": float(mem.used),
+        }
+    except OSError as exc:
+        logger.debug("psutil virtual_memory failed: %s", exc)
+        return None
 
-        mem_total = results["MemTotal"]
-        mem_avail = results["MemAvailable"]
+
+def _get_memory_usage_fallback() -> dict[str, float]:
+    mem_info = {"total": 0.0, "available": 0.0, "percent": 0.0, "used": 0.0}
+    try:
+        results = _read_meminfo(["MemTotal", "MemAvailable"])
+        mem_total = results.get("MemTotal", 0)
+        mem_avail = results.get("MemAvailable", 0)
         if mem_total > 0:
             used = mem_total - mem_avail
             mem_info.update(
@@ -253,35 +278,32 @@ def get_memory_usage() -> dict[str, float]:
 
 def get_swap_usage() -> dict[str, float]:
     """Return swap memory info."""
-    swap_info = {"total": 0.0, "used": 0.0, "percent": 0.0}
     if _PSUTIL_AVAILABLE and psutil:
-        try:
-            swap = psutil.swap_memory()
-            swap_info.update(
-                {
-                    "total": float(swap.total),
-                    "used": float(swap.used),
-                    "percent": swap.percent,
-                }
-            )
-            return swap_info
-        except OSError as exc:
-            logger.debug("psutil swap_memory failed: %s", exc)
+        swap = _get_swap_usage_psutil()
+        if swap:
+            return swap
+    return _get_swap_usage_fallback()
 
-    # Fallback /proc/meminfo
+
+def _get_swap_usage_psutil() -> dict[str, float] | None:
     try:
-        results = {"SwapTotal": 0, "SwapFree": 0}
-        with open("/proc/meminfo", encoding="utf-8") as f:
-            for line in f:
-                parts = line.split()
-                if not parts:
-                    continue
-                key = parts[0].replace(":", "")
-                if key in results:
-                    results[key] = int(parts[1]) * 1024
+        swap = psutil.swap_memory()
+        return {
+            "total": float(swap.total),
+            "used": float(swap.used),
+            "percent": swap.percent,
+        }
+    except OSError as exc:
+        logger.debug("psutil swap_memory failed: %s", exc)
+        return None
 
-        total = results["SwapTotal"]
-        free = results["SwapFree"]
+
+def _get_swap_usage_fallback() -> dict[str, float]:
+    swap_info = {"total": 0.0, "used": 0.0, "percent": 0.0}
+    try:
+        results = _read_meminfo(["SwapTotal", "SwapFree"])
+        total = results.get("SwapTotal", 0)
+        free = results.get("SwapFree", 0)
         if total > 0:
             used = total - free
             swap_info.update(
@@ -296,6 +318,26 @@ def get_swap_usage() -> dict[str, float]:
     return swap_info
 
 
+def _read_meminfo(keys: list[str]) -> dict[str, int]:
+    results = {key: 0 for key in keys}
+    try:
+        with open("/proc/meminfo", encoding="utf-8") as f:
+            for line in f:
+                _parse_meminfo_line(line, results)
+    except OSError as exc:
+        logger.debug("/proc/meminfo read failed: %s", exc)
+    return results
+
+
+def _parse_meminfo_line(line: str, results: dict[str, int]) -> None:
+    parts = line.split()
+    if not parts:
+        return
+    key = parts[0].replace(":", "")
+    if key in results:
+        results[key] = int(parts[1]) * 1024
+
+
 # --- Battery Metrics (formerly battery.py) ---
 
 
@@ -303,50 +345,220 @@ def get_battery_status() -> dict[str, Any]:
     """Return battery information (percent, power_plugged, time_left)."""
     battery: dict[str, Any] = {}
     if _PSUTIL_AVAILABLE and psutil:
-        try:
-            bat = psutil.sensors_battery()
-            if bat:
-                battery.update(
-                    {
-                        "percent": bat.percent,
-                        "power_plugged": bat.power_plugged,
-                        "secsleft": bat.secsleft,
-                    }
-                )
-        except OSError as exc:
-            logger.debug("psutil sensors_battery failed: %s", exc)
+        bat = _get_battery_status_psutil()
+        if bat:
+            battery.update(bat)
 
     # Android fallback
-    try:
-        base = Path("/sys/class/power_supply/battery")
-        if base.is_dir():
-
-            def read_int(name: str) -> int | None:
-                f = base / name
-                if f.is_file():
-                    try:
-                        return int(f.read_text().strip())
-                    except (OSError, ValueError):
-                        pass
-                return None
-
-            capacity = read_int("capacity")
-            status_file = base / "status"
-            status = status_file.read_text().strip() if status_file.is_file() else ""
-
-            if "percent" not in battery:
-                battery["percent"] = capacity if capacity is not None else 0
-            if "power_plugged" not in battery:
-                battery["power_plugged"] = status.lower() in ("charging", "full")
-            if "secsleft" not in battery:
-                battery["secsleft"] = -1
-    except OSError as exc:
-        logger.debug("Battery fallback failed: %s", exc)
+    fallback = _get_battery_status_fallback()
+    _merge_battery_data(battery, fallback)
 
     return battery
 
 
-# --- Uptime Metrics (formerly uptime.py) ---
+def _merge_battery_data(target: dict[str, Any], source: dict[str, Any]) -> None:
+    for key, value in source.items():
+        if key not in target:
+            target[key] = value
+
+
+def _get_battery_status_psutil() -> dict[str, Any] | None:
+    try:
+        bat = psutil.sensors_battery()
+        if bat:
+            return {
+                "percent": bat.percent,
+                "power_plugged": bat.power_plugged,
+                "secsleft": bat.secsleft,
+            }
+    except OSError as exc:
+        logger.debug("psutil sensors_battery failed: %s", exc)
+    return None
+
+
+def _get_battery_status_fallback() -> dict[str, Any]:
+    battery = {}
+    try:
+        base = Path("/sys/class/power_supply/battery")
+        if base.is_dir():
+            capacity = _read_int(base / "capacity")
+            status_file = base / "status"
+            status = status_file.read_text().strip() if status_file.is_file() else ""
+
+            battery["percent"] = capacity if capacity is not None else 0
+            battery["power_plugged"] = status.lower() in ("charging", "full")
+            battery["secsleft"] = -1
+    except OSError as exc:
+        logger.debug("Battery fallback failed: %s", exc)
+    return battery
+
+
+def _read_int(path: Path) -> int | None:
+    if path.is_file():
+        try:
+            return int(path.read_text().strip())
+        except (OSError, ValueError):
+            pass
+    return None
+
+
+# --- Temperatures (formerly temperatures.py) ---
+
+
+def get_temperatures() -> dict[str, float]:
+    """Return a dict of sensor names and their temperatures in °C."""
+    # Try psutil
+    if _PSUTIL_AVAILABLE and psutil:
+        temps = _get_temperatures_psutil()
+        if temps:
+            return temps
+
+    # Fallback to thermal zones
+    return _get_temperatures_fallback()
+
+
+def _get_temperatures_psutil() -> dict[str, float]:
+    temps: dict[str, float] = {}
+    try:
+        sensors = psutil.sensors_temperatures()
+        for name, entries in sensors.items():
+            for entry in entries:
+                temps[entry.label or name] = entry.current
+    except OSError as exc:
+        logger.debug("psutil sensors_temperatures failed: %s", exc)
+    return temps
+
+
+def _get_temperatures_fallback() -> dict[str, float]:
+    temps: dict[str, float] = {}
+    try:
+        base = Path("/sys/class/thermal")
+        if base.exists():
+            _collect_thermal_zones(base, temps)
+    except OSError as exc:
+        logger.debug("Thermal zone lookup failed: %s", exc)
+    return temps
+
+
+def _collect_thermal_zones(base: Path, temps: dict[str, float]) -> None:
+    for zone in base.iterdir():
+        if zone.is_dir() and zone.name.startswith("thermal_zone"):
+            _process_thermal_zone(zone, temps)
+
+
+def _process_thermal_zone(zone: Path, temps: dict[str, float]) -> None:
+    type_p, temp_p = zone / "type", zone / "temp"
+    if type_p.is_file() and temp_p.is_file():
+        try:
+            temp = float(temp_p.read_text().strip()) / 1000.0
+            temps[type_p.read_text().strip()] = temp
+        except (OSError, ValueError):
+            pass
+
+
+# --- New Class-Based Monitors ---
+
+
+class CPUMonitor:
+    """Monitor CPU metrics."""
+
+    @staticmethod
+    def get_usage(interval: float = 1.0) -> float:
+        return get_cpu_usage(interval=interval)
+
+    @staticmethod
+    def get_per_core_usage(interval: float = 1.0) -> list[float]:
+        return get_per_cpu_usage(interval=interval)
+
+    @staticmethod
+    def get_count(logical: bool = True) -> int:
+        return get_cpu_count() if logical else get_physical_cpu_count()
+
+    @staticmethod
+    def get_frequency() -> dict[str, Any]:
+        return get_cpu_frequency()
+
+    @staticmethod
+    def get_load_average() -> tuple[float, float, float]:
+        return get_load_average()
+
+
+class MemoryMonitor:
+    """Monitor memory metrics."""
+
+    @staticmethod
+    def get_usage() -> dict[str, float]:
+        return get_memory_usage()
+
+    @staticmethod
+    def get_swap_usage() -> dict[str, float]:
+        return get_swap_usage()
+
+
+class DiskMonitor:
+    """Monitor disk metrics."""
+
+    @staticmethod
+    def get_usage(path: str = "/") -> dict[str, float]:
+        return get_disk_usage(path=path)
+
+
+class BatteryMonitor:
+    """Monitor battery metrics."""
+
+    @staticmethod
+    def get_status() -> dict[str, Any]:
+        return get_battery_status()
+
+
+class EnvironmentMonitor:
+    """Monitor environment and system info."""
+
+    @staticmethod
+    def get_info() -> dict[str, Any]:
+        return {
+            "name": get_environment_name(),
+            "os": get_os(),
+            "os_version": get_os_version(),
+            "architecture": get_architecture(),
+            "python_version": get_python_version(),
+            "hostname": get_hostname(),
+            "uptime_seconds": get_uptime_seconds(),
+        }
+
+
+class SystemMonitor:
+    """Unified system monitor."""
+
+    def __init__(self) -> None:
+        self.cpu = CPUMonitor()
+        self.memory = MemoryMonitor()
+        self.disk = DiskMonitor()
+        self.battery = BatteryMonitor()
+        self.env = EnvironmentMonitor()
+
+    def get_full_report(self) -> dict[str, Any]:
+        """Return a comprehensive report."""
+        return {
+            "environment": self.env.get_info(),
+            "cpu": {
+                "usage_percent": self.cpu.get_usage(),
+                "per_cpu_usage": self.cpu.get_per_core_usage(),
+                "count": self.cpu.get_count(),
+                "physical_count": self.cpu.get_count(logical=False),
+                "frequency": self.cpu.get_frequency(),
+                "load_average": self.cpu.get_load_average(),
+            },
+            "memory": {
+                "virtual": self.memory.get_usage(),
+                "swap": self.memory.get_swap_usage(),
+            },
+            "disk": {
+                "root": self.disk.get_usage(),
+            },
+            "temperatures": get_temperatures(),
+            "battery": self.battery.get_status(),
+        }
 
 
 def get_uptime_seconds() -> float:
@@ -362,38 +574,3 @@ def get_uptime_seconds() -> float:
     except (OSError, ValueError) as exc:
         logger.debug("/proc/uptime read failed: %s", exc)
     return 0.0
-
-
-# --- Temperatures (formerly temperatures.py) ---
-
-
-def get_temperatures() -> dict[str, float]:
-    """Return a dict of sensor names and their temperatures in °C."""
-    temps: dict[str, float] = {}
-
-    # Try psutil
-    if _PSUTIL_AVAILABLE and psutil:
-        try:
-            sensors = psutil.sensors_temperatures()
-            for name, entries in sensors.items():
-                for entry in entries:
-                    temps[entry.label or name] = entry.current
-        except OSError as exc:
-            logger.debug("psutil sensors_temperatures failed: %s", exc)
-
-    if temps:
-        return temps
-
-    # Fallback to thermal zones
-    try:
-        base = Path("/sys/class/thermal")
-        if base.exists():
-            for zone in base.iterdir():
-                if zone.is_dir() and zone.name.startswith("thermal_zone"):
-                    type_p, temp_p = zone / "type", zone / "temp"
-                    if type_p.is_file() and temp_p.is_file():
-                        temp = float(temp_p.read_text().strip()) / 1000.0
-                        temps[type_p.read_text().strip()] = temp
-    except OSError as exc:
-        logger.debug("Thermal zone lookup failed: %s", exc)
-    return temps

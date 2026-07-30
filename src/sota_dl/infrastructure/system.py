@@ -8,7 +8,7 @@ from typing import Any
 from sota_dl.infrastructure import system_monitor as sm
 
 _PSUTIL_AVAILABLE = sm._PSUTIL_AVAILABLE
-psutil = sm.psutil
+psutil = sm.psutil  # type: ignore[attr-defined]
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,8 @@ class SystemInfoError(Exception):
 
 
 # pylint: disable=too-many-public-methods
+
+
 class SystemInfo:
     """
     Gather system metrics reliably across Linux, Android, and Termux.
@@ -33,6 +35,8 @@ class SystemInfo:
         if SystemInfo.is_android():
             temp = SystemInfo.get_battery_temperature()
     """
+
+    _monitor = sm.SystemMonitor()
 
     # ------------------------------------------------------------------
     # Environment detection
@@ -105,7 +109,7 @@ class SystemInfo:
         Returns:
             CPU utilisation as a float, or -1.0 if not measurable.
         """
-        return sm.get_cpu_usage(interval=interval)
+        return SystemInfo._monitor.cpu.get_usage(interval=interval)
 
     @staticmethod
     def get_per_cpu_usage(interval: float = 1.0) -> list[float]:
@@ -114,17 +118,17 @@ class SystemInfo:
 
         Returns an empty list if sm.psutil is unavailable.
         """
-        return sm.get_per_cpu_usage(interval=interval)
+        return SystemInfo._monitor.cpu.get_per_core_usage(interval=interval)
 
     @staticmethod
     def get_cpu_count() -> int:
         """Return the number of logical CPUs."""
-        return sm.get_cpu_count()
+        return SystemInfo._monitor.cpu.get_count()
 
     @staticmethod
     def get_physical_cpu_count() -> int:
         """Return the number of physical CPU cores."""
-        return sm.get_physical_cpu_count()
+        return SystemInfo._monitor.cpu.get_count(logical=False)
 
     @staticmethod
     def get_cpu_frequency() -> dict[str, Any]:
@@ -133,12 +137,12 @@ class SystemInfo:
 
         Returns a dict with keys ``current``, ``min``, ``max`` (MHz) or empty.
         """
-        return sm.get_cpu_frequency()
+        return SystemInfo._monitor.cpu.get_frequency()
 
     @staticmethod
     def get_load_average() -> tuple[float, float, float]:
         """Return the 1, 5, 15 minute load averages (Linux/Android)."""
-        return sm.get_load_average()
+        return SystemInfo._monitor.cpu.get_load_average()
 
     # ------------------------------------------------------------------
     # Memory
@@ -150,12 +154,12 @@ class SystemInfo:
 
         Returns zeroes if information cannot be obtained.
         """
-        return sm.get_memory_usage()
+        return SystemInfo._monitor.memory.get_usage()
 
     @staticmethod
     def get_swap_usage() -> dict[str, float]:
         """Return swap memory info (total, used, percent) or zeroes."""
-        return sm.get_swap_usage()
+        return SystemInfo._monitor.memory.get_swap_usage()
 
     # ------------------------------------------------------------------
     # Disk
@@ -170,7 +174,7 @@ class SystemInfo:
 
         Returns zeroes if unavailable.
         """
-        return sm.get_disk_usage(path=path)
+        return SystemInfo._monitor.disk.get_usage(path=str(path))
 
     # ------------------------------------------------------------------
     # Temperature
@@ -195,7 +199,7 @@ class SystemInfo:
 
         Returns empty dict if no battery is present or info is unavailable.
         """
-        return sm.get_battery_status()
+        return SystemInfo._monitor.battery.get_status()
 
     # ------------------------------------------------------------------
     # Uptime
@@ -215,31 +219,4 @@ class SystemInfo:
 
         Useful for logging or monitoring dashboards.
         """
-        return {
-            "environment": {
-                "name": SystemInfo.get_environment_name(),
-                "os": SystemInfo.get_os(),
-                "os_version": SystemInfo.get_os_version(),
-                "architecture": SystemInfo.get_architecture(),
-                "python_version": SystemInfo.get_python_version(),
-                "hostname": SystemInfo.get_hostname(),
-            },
-            "cpu": {
-                "usage_percent": SystemInfo.get_cpu_usage(),
-                "per_cpu_usage": SystemInfo.get_per_cpu_usage(),
-                "count": SystemInfo.get_cpu_count(),
-                "physical_count": SystemInfo.get_physical_cpu_count(),
-                "frequency": SystemInfo.get_cpu_frequency(),
-                "load_average": SystemInfo.get_load_average(),
-            },
-            "memory": {
-                "virtual": SystemInfo.get_memory_usage(),
-                "swap": SystemInfo.get_swap_usage(),
-            },
-            "disk": {
-                "root": SystemInfo.get_disk_usage("/"),
-            },
-            "temperatures": SystemInfo.get_temperatures(),
-            "battery": SystemInfo.get_battery_status(),
-            "uptime_seconds": SystemInfo.get_uptime_seconds(),
-        }
+        return SystemInfo._monitor.get_full_report()

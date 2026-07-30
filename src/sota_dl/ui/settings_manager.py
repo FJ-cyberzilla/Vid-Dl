@@ -1,46 +1,42 @@
-from pathlib import Path
+"""Settings management UI."""
+
 from rich.prompt import Prompt
 from sota_dl.config import settings
-from sota_dl.config.colors import THEME
+from sota_dl.ui.colors import THEME
 from sota_dl.ui.banners import print_error, print_success
+from sota_dl.core.config_service import ConfigurationService
 import sota_dl.ui.menu_renderer as menu_renderer
+
+_config_service = ConfigurationService()
 
 
 def update_cookies() -> None:
     """Handle cookies update."""
     new_path = Prompt.ask(f"[{THEME}]Enter path to cookies.txt[/]")
-    if not new_path:
-        return
-    path = Path(new_path).expanduser().absolute()
-    if path.exists():
-        settings.COOKIES_PATH = path
-        print_success(f"Source updated: {path}")
+    success, message = _config_service.update_cookies_path(new_path)
+    if success:
+        print_success(message)
     else:
-        print_error(f"Source not found: {path}")
+        print_error(message)
 
 
 def update_download_path() -> None:
     """Handle download path update."""
     new_path = Prompt.ask(f"[{THEME}]Enter target directory[/]")
-    if not new_path:
-        return
-    path = Path(new_path).expanduser().absolute()
-    if settings._is_writable(path):
-        settings.ENV_OVERRIDE = path
-        print_success(f"Target updated: {path}")
+    success, message = _config_service.update_download_path(new_path)
+    if success:
+        print_success(message)
     else:
-        print_error(f"Target not writable: {path}")
+        print_error(message)
 
 
 def _handle_cookie_extraction() -> None:
     """Handle browser cookie extraction."""
-    from sota_dl.infrastructure.adapters.browser_cookies import BrowserCookieAdapter
-
-    cookies = BrowserCookieAdapter.get_cookies_for_url("youtube.com")
-    if cookies:
-        print_success("Successfully extracted cookies from Chrome")
+    success, message = _config_service.extract_browser_cookies()
+    if success:
+        print_success(message)
     else:
-        print_error("Failed to extract cookies")
+        print_error(message)
 
 
 def handle_settings() -> None:

@@ -27,7 +27,7 @@ def test_ensure_dir(tmp_path: Path) -> None:
     assert p.parent.exists()
 
 
-@patch("requests.get")
+@patch("sota_dl.infrastructure.adapters.videodl.NetworkManager.get")
 def test_single_download_success(mock_get: MagicMock, tmp_path: Path) -> None:
     dl = VideoDLFallback()
     mock_response = MagicMock()

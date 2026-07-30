@@ -12,7 +12,7 @@ from typing import Any
 
 import requests
 from requests.exceptions import RequestException, Timeout as RequestsTimeout
-from sota_dl.infrastructure.adapters.network import NetworkClient
+from sota_dl.infrastructure.network import NetworkManager
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class VideoDLFallback:
             timeout: Default connect & read timeout in seconds.
         """
         self.timeout = timeout
-        self.network_client = NetworkClient()
+        self.network_manager = NetworkManager(timeout=timeout)
 
     # ------------------------------------------------------------------
     # Validation
@@ -178,11 +178,8 @@ class VideoDLFallback:
     def _get_response(self, url: str, timeout: float) -> requests.Response:
         """Handle response fetching."""
         try:
-            # We use a blocking request wrapped in an async method in NetworkClient
-            # for consistency and rate limiting
-            response = asyncio.run(
-                self.network_client.get(url, stream=True, timeout=timeout)
-            )
+            # Use the consolidated NetworkManager for requests
+            response = self.network_manager.get(url, stream=True, timeout=timeout)
             response.raise_for_status()
             return response
         except RequestsTimeout as exc:

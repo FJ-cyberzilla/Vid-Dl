@@ -21,12 +21,12 @@ ICON_FAIL := $(ROSE)✖$(RESET)
 ICON_WARN := $(AMBER)⚡$(RESET)
 ICON_NODE := $(CYAN)❖$(RESET)
 
-APP_NAME  := $(BOLD)$(CYAN)SOTA Vid-Dl$(RESET) $(DIM)v3.0.1$(RESET)
+APP_NAME  := $(BOLD)$(CYAN)SOTA Vid-Dl$(RESET) $(DIM)v2.0.0$(RESET)
 BRAND     := $(BOLD)$(VIOLET)FJ™ Cyberzilla Systems$(RESET)
 
 .DEFAULT_GOAL := help
 .PHONY: help install dev update run diagnose lint format clean test coverage build menu \
-        install-completion
+        install-completion sync
 
 # ==============================================================================
 # TARGETS
@@ -80,6 +80,11 @@ update: ## Upgrade locked dependencies (uv lock --upgrade)
 	@uv sync
 	@printf " $(ICON_OK) $(EMERALD)Dependencies successfully updated.$(RESET)\n"
 
+sync: ## Synchronize environment with lockfile
+	@printf " $(ICON_NODE) $(CYAN)Synchronizing environment...$(RESET)\n"
+	@uv sync
+	@printf " $(ICON_OK) $(EMERALD)Synchronization complete.$(RESET)\n"
+
 install-completion: ## Auto-detect shell and install tab completion to .zshrc/.bashrc
 	@shell_bin="$$(basename "$$SHELL")"; \
 	if [ "$$shell_bin" = "zsh" ] || [ -f "$$HOME/.zshrc" ]; then \
@@ -110,7 +115,7 @@ install-completion: ## Auto-detect shell and install tab completion to .zshrc/.b
 diagnose: ## Run environment and dependency compatibility check
 	@printf "\n $(BOLD)$(CYAN)┌── Environment Diagnostic Dashboard ─────────────────────────┐$(RESET)\n"
 	@printf " $(CYAN)│$(RESET) Core Dependencies : "
-	@uv run python -c "import yt_dlp, rich, mutagen, pydantic, tenacity, requests" 2>/dev/null \
+	@uv run python -c "import yt_dlp, rich, pydantic, tenacity, requests" 2>/dev/null \
 		&& printf "$(ICON_OK) $(EMERALD)All required modules loaded$(RESET)\n" \
 		|| printf "$(ICON_FAIL) $(ROSE)Missing required modules$(RESET)\n"
 	@printf " $(CYAN)│$(RESET) Optional psutil   : "

@@ -4,16 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sota-downloader"
-version = "3.0.1"
+version = "2.0.0"
 description = "A modular, terminal-based media extraction tool optimized for Android/Termux."
 requires-python = ">=3.10"
 dependencies = [
     "yt-dlp>=2026.07.04",
     "rich>=13.7.1",
-    "mutagen>=1.47.0",
     "pydantic>=2.8.2",
     "tenacity>=8.5.0",
-    "requests>=2.32.3"
+    "requests>=2.32.3",
+    "structlog>=24.4.0",
+    "platformdirs>=4.3.0"
 ]
 
 [project.scripts]

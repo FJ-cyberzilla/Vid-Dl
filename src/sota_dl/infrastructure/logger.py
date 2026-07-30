@@ -10,6 +10,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from sota_dl.infrastructure.app_dirs import LOG_DIR
 
+
 @dataclass(slots=True, frozen=True)
 class LoggerConfig:
     """Configuration settings for structured file logging."""
@@ -18,6 +19,7 @@ class LoggerConfig:
     max_bytes: int = 10 * 1024 * 1024  # 10 MB per log file
     backup_count: int = 5  # Retain up to 5 rotated files
     log_level: int = logging.INFO
+
 
 def setup_logger(
     name: str = "app", config: LoggerConfig | None = None
@@ -35,7 +37,7 @@ def setup_logger(
         backupCount=cfg.backup_count,
         encoding="utf-8",
     )
-    
+
     # Configure structlog
     structlog.configure(
         processors=[
@@ -52,11 +54,11 @@ def setup_logger(
     logger = logging.getLogger(name)
     logger.setLevel(cfg.log_level)
     logger.propagate = False
-    
+
     # Remove existing handlers to avoid duplication
     for h in logger.handlers[:]:
         logger.removeHandler(h)
-    
+
     logger.addHandler(handler)
 
-    return structlog.get_logger(name)
+    return structlog.get_logger(name)  # type: ignore[no-any-return]

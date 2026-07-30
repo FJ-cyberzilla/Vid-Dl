@@ -6,7 +6,7 @@ from pathlib import Path
 from rich.prompt import Prompt
 
 from sota_dl.config.settings import check_ffmpeg, get_download_path
-from sota_dl.config.colors import ERROR, THEME
+from sota_dl.ui.colors import ERROR, THEME
 from sota_dl.utils.validators import is_valid_input
 from sota_dl.ui.banners import render_main_banner, print_error, console
 import sota_dl.ui.menu_renderer as menu_renderer

@@ -11,6 +11,11 @@ ENV/
 env.bak/
 venv.bak/
 
+# Project Metadata & Build Artifacts
+sota_downloader.egg-info/
+build/
+dist/
+
 # Testing, Coverage & Type Checkers
 .coverage
 .coverage.*
@@ -30,6 +35,10 @@ cookies.txt
 *.wvd
 *.der
 client_id.bin
+
+# Documentation & Local Config
+GEMINI.md
+# ... (rest of the file)
 
 # yt-dlp Caches, Fragments & Temporary Downloads
 .yt-dlp/
@@ -59,3 +68,5 @@ modification.txt
 test_import.py
 *.log
 *.tmp
+refactor.txt
+refine.txt

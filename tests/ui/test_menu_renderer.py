@@ -1,0 +1,32 @@
+from unittest.mock import patch
+from sota_dl.ui.menu_renderer import (
+    render_dashboard,
+    render_settings_menu,
+    get_menu_selection,
+)
+
+
+@patch("sota_dl.ui.menu_renderer.render_main_banner")
+@patch("sota_dl.ui.menu_renderer.console.print")
+def test_render_dashboard(mock_print, mock_banner, tmp_path):
+    render_dashboard(tmp_path)
+
+    mock_banner.assert_called_once()
+    assert mock_print.called
+
+
+@patch("sota_dl.ui.menu_renderer.console.print")
+def test_render_settings_menu(mock_print, tmp_path):
+    render_settings_menu(tmp_path / "cookies", tmp_path / "downloads")
+
+    assert mock_print.called
+
+
+@patch("sota_dl.ui.menu_renderer.Prompt.ask")
+def test_get_menu_selection(mock_ask):
+    mock_ask.return_value = "1"
+
+    result = get_menu_selection("Select", ["1", "2"])
+
+    assert result == "1"
+    mock_ask.assert_called_once()

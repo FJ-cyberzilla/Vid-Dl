@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 from pathlib import Path
 from sota_dl.core.protocols import Downloader, ProgressReporter
 from sota_dl.core.fallback import FallbackDownloader
-from sota_dl.core.controller import DownloadController
 
 
 @pytest.fixture
@@ -19,11 +18,6 @@ def mock_fallback_downloader() -> MagicMock:
 @pytest.fixture
 def mock_progress_reporter() -> MagicMock:
     return MagicMock(spec=ProgressReporter)
-
-
-@pytest.fixture
-def mock_controller() -> MagicMock:
-    return MagicMock(spec=DownloadController)
 
 
 @pytest.fixture

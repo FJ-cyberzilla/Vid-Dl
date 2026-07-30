@@ -1,4 +1,4 @@
-Sota Vid-Dl v3.0.1 — Complete Technical
+Sota Vid-Dl v2.0.0 — Complete Technical
 & User Documentation
 High-Performance, Modular, and Resilient Media Extractor for Termux & Android
 Maintained by FJ-Cyberzilla • FJ™ Cybertronic Systems
@@ -267,5 +267,5 @@ Lower video stream resolution
 or enable fast container copy in
 settings.py. 📜 10. License & Maintenance
 ● Maintainer: FJ-Cyberzilla • FJ™ Cybertronic Systems
-● Target Release: Sota Vid-Dl v3.0.1 (MMXXVI Edition)
+● Target Release: Sota Vid-Dl v2.0.0 (MMXXVI Edition)
 ● Design Paradigm: Modular, Resilient, Clean Code Architecture

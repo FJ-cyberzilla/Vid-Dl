@@ -8,7 +8,7 @@ from types import FrameType
 
 from sota_dl.ui.menus import launch_command_center
 from sota_dl.ui.banners import console, __version__
-from sota_dl.config.colors import MUTED
+from sota_dl.ui.colors import MUTED
 from sota_dl.infrastructure.logger import setup_logger
 from sota_dl.infrastructure.system_validator import verify_system_dependencies
 from sota_dl.infrastructure.crash_reporter import report_crash

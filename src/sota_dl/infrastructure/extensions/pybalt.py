@@ -22,15 +22,15 @@ logger = setup_logger("adapters.pybalt")
 
 # Handle optional dependencies
 try:
-    from pybalt.core.exceptions import CobaltError
-    from pybalt import StatusParent
+    import pybalt  # type: ignore[import-not-found]
+    from pybalt.core.exceptions import CobaltError  # type: ignore[import-not-found]
+    from pybalt import StatusParent  # type: ignore[import-not-found]
 except ImportError:
-    # Define stubs if not available
-    class CobaltError(Exception):
-        """Stub for CobaltError."""
+    pybalt = None
+    CobaltError = Exception
 
     class StatusParent:
-        """Stub for StatusParent."""
+        """Dummy StatusParent for when pybalt is missing."""
 
 
 # ---------------------------------------------------------------------------

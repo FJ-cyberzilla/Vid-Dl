@@ -5,7 +5,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.prompt import Prompt
 
-from sota_dl.config.colors import THEME, MUTED, ACCENT, TEXT
+from sota_dl.ui.colors import THEME, MUTED, ACCENT, TEXT
 from sota_dl.config.settings import COOKIES_PATH
 from sota_dl.ui.banners import render_main_banner, console
 

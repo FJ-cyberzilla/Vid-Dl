@@ -23,9 +23,13 @@ def test_download_result_success(tmp_path):
 
 
 def test_video_metadata_validation():
-    metadata = VideoMetadata(title="Test", url="http://test.com")
+    metadata = VideoMetadata(title="Test", url="http://test.com", duration=10)
     assert metadata.title == "Test"
     assert metadata.url == "http://test.com"
+    assert metadata.get_info() == "Test (10s)"
+
+    metadata_no_duration = VideoMetadata(title="Test", url="http://test.com")
+    assert metadata_no_duration.get_info() == "Test (unknowns)"
 
 
 def test_download_task_creation(tmp_path):

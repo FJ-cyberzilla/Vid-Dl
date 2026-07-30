@@ -4,7 +4,7 @@ from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.table import Table
 
-from sota_dl.config.colors import THEME, ACCENT, TEXT
+from sota_dl.ui.colors import THEME, ACCENT, TEXT
 from sota_dl.ui.banners import console
 
 

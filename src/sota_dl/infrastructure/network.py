@@ -91,6 +91,33 @@ class NetworkManager:
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(None, func, *args, **kwargs)
 
+    def get(self, url: str, **kwargs: Any) -> requests.Response:
+        """
+        Perform a GET request using the persistent session.
+
+        Args:
+            url: The URL to request.
+            **kwargs: Additional arguments passed to requests.get.
+
+        Returns:
+            A requests.Response object.
+        """
+        timeout = kwargs.pop("timeout", self.timeout)
+        return self.session.get(url, timeout=timeout, **kwargs)
+
+    async def get_async(self, url: str, **kwargs: Any) -> requests.Response:
+        """
+        Perform a throttled GET request asynchronously.
+
+        Args:
+            url: The URL to request.
+            **kwargs: Additional arguments passed to requests.get.
+
+        Returns:
+            A requests.Response object.
+        """
+        return await self.throttled_request(self.get, url, **kwargs)
+
     @staticmethod
     def _build_session(
         proxy: str | None,
