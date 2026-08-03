@@ -75,3 +75,10 @@ class DiskSpaceError(InfrastructureError):
 
     Common details: *path*, *required_bytes*, *free_bytes*.
     """
+
+
+class ExtractionError(InfrastructureError):
+    """Raised when metadata extraction fails.
+
+    Common details: *url*, *reason*.
+    """

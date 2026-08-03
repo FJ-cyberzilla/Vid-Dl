@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any
 import pytest
 import threading
@@ -46,14 +45,6 @@ def test_process_target_failure(
     assert "Config error" in results[0].error
 
 
-def test_resolve_targets_file(service: DownloadService, tmp_path: Path) -> None:
-    batch_file = tmp_path / "urls.txt"
-    batch_file.write_text("https://a.com\n#comment\n\nhttps://b.com")
-
-    targets = service._resolve_targets(str(batch_file))
-    assert targets == ["https://a.com", "https://b.com"]
-
-
 def test_cancel_operation(
     service: DownloadService,
     mock_downloader: MagicMock,
@@ -71,13 +62,14 @@ def test_cancel_operation(
     threading.Timer(0.05, service.cancel).start()
 
     # Process multiple targets
-    with patch.object(
-        service, "_resolve_targets", return_value=["url1", "url2", "url3"]
+    with patch(
+        "sota_dl.core.download_service.TargetResolver.resolve",
+        return_value=["url1", "url2", "url3"],
     ):
         results = service.process_target("dummy", options=DownloadOptions())
 
     assert len(results) < 3
-    assert service._cancelled
+    assert service._state_manager.cancelled
 
 
 def test_pause_resume_operation(
@@ -96,11 +88,3 @@ def test_pause_resume_operation(
     # This should block then proceed
     results = service.process_target("https://a.com")
     assert len(results) == 1
-
-
-def test_empty_batch_file_raises(service: DownloadService, tmp_path: Path) -> None:
-    empty_file = tmp_path / "empty.txt"
-    empty_file.write_text("")
-
-    with pytest.raises(ValueError, match="no valid URLs"):
-        service._resolve_targets(str(empty_file))

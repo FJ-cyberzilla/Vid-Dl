@@ -6,11 +6,11 @@ from .yt_dlp import YtDlpAdapter
 from typing import Any
 import contextlib
 
-PyBaltEngine: Any = None  # type: ignore[assignment, misc]
+PyBaltEngine: Any = None
 with contextlib.suppress(ImportError):
     from ..extensions.pybalt import PyBaltEngine
 
-WidevineDRM: Any = None  # type: ignore[assignment, misc]
+WidevineDRM: Any = None
 with contextlib.suppress(ImportError):
     from ..extensions.pywidevine import WidevineDRM
 

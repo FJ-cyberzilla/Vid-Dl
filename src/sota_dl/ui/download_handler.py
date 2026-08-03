@@ -1,11 +1,13 @@
 from pathlib import Path
 from typing import Any
+
+from sota_dl.config.settings import COOKIES_PATH
 from sota_dl.ui.colors import MUTED
 from sota_dl.ui.banners import print_error, print_success, console
 from sota_dl.ui.prompts import get_quality_choice
 from sota_dl.core.event_bus import EventBus
 from sota_dl.core.models import DownloadOptions, DownloadResult
-from sota_dl.core.download_service import DownloadService
+
 
 # Factory to break circularity
 def _get_downloader_factory() -> Any:
@@ -31,6 +33,9 @@ def execute_download(choice: str, target: str, output_path: Path) -> None:
     is_audio = choice == "2"
     quality = get_quality_choice(is_audio)
 
+    # Check for cookies file
+    cookie_file = COOKIES_PATH if COOKIES_PATH.exists() else None
+
     download_options = DownloadOptions(
         quality=quality,
         format="mp3" if is_audio else None,
@@ -38,6 +43,7 @@ def execute_download(choice: str, target: str, output_path: Path) -> None:
         overwrite=False,
         retries=3,
         timeout=30.0,
+        cookiefile=cookie_file,
     )
 
     event_bus = EventBus()

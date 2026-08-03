@@ -6,12 +6,14 @@ import asyncio
 import logging
 import time
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeVar, cast
 
 import requests
 from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
 from urllib3.util.retry import Retry
+
+T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
@@ -84,12 +86,12 @@ class NetworkManager:
         self._semaphore = asyncio.Semaphore(max_concurrent_requests)
 
     async def throttled_request(
-        self, func: Callable[..., Any], *args: Any, **kwargs: Any
-    ) -> Any:
+        self, func: Callable[..., T], *args: Any, **kwargs: Any
+    ) -> T:
         """Execute a network request function within the semaphore limits."""
         async with self._semaphore:
             loop = asyncio.get_running_loop()
-            return await loop.run_in_executor(None, func, *args, **kwargs)
+            return cast(T, await loop.run_in_executor(None, func, *args, **kwargs))
 
     def get(self, url: str, **kwargs: Any) -> requests.Response:
         """
@@ -117,6 +119,19 @@ class NetworkManager:
             A requests.Response object.
         """
         return await self.throttled_request(self.get, url, **kwargs)
+
+    def post(self, url: str, **kwargs: Any) -> requests.Response:
+        """
+        Perform a POST request using the persistent session.
+        """
+        timeout = kwargs.pop("timeout", self.timeout)
+        return self.session.post(url, timeout=timeout, **kwargs)
+
+    async def post_async(self, url: str, **kwargs: Any) -> requests.Response:
+        """
+        Perform a throttled POST request asynchronously.
+        """
+        return await self.throttled_request(self.post, url, **kwargs)
 
     @staticmethod
     def _build_session(
@@ -182,7 +197,7 @@ class NetworkManager:
         Async wrapper around :meth:`check_url` (runs in a thread pool).
         """
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, self.check_url, url)
+        return cast(bool, await loop.run_in_executor(None, self.check_url, url))
 
     # ------------------------------------------------------------------
     # Speed measurement
@@ -290,13 +305,16 @@ class NetworkManager:
         Async version of :meth:`get_speed_mbps`.
         """
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(
-            None,
-            self.get_speed_mbps,
-            test_url,
-            duration,
-            chunk_size,
-            progress_callback,
+        return cast(
+            float,
+            await loop.run_in_executor(
+                None,
+                self.get_speed_mbps,
+                test_url,
+                duration,
+                chunk_size,
+                progress_callback,
+            ),
         )
 
     # ------------------------------------------------------------------

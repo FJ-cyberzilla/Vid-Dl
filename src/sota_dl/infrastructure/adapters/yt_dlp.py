@@ -88,31 +88,64 @@ class YtDlpEngine:
         extra_opts: dict[str, Any] | None = None,
     ) -> Path:
         """Download a single media resource."""
+        if not url or not output_dir:
+            raise ValueError("Invalid URL or output directory")
+
         output_dir.mkdir(parents=True, exist_ok=True)
-        final_path: Path | None = None
+        path_container: dict[str, Path | None] = {"final_path": None}
 
-        def _progress_hook(d: ProgressDict) -> None:
-            nonlocal final_path
-            if d.get("status") == "finished" and "filename" in d:
-                final_path = Path(d["filename"])
-            if progress_callback:
-                progress_callback(cast(dict[str, Any], d))
-
-        opts = self.get_opts(extra_opts)
-        opts["outtmpl"] = str(output_dir / self.output_template)
-        opts["progress_hooks"] = [_progress_hook]
+        opts = self._build_ydl_opts(
+            output_dir,
+            extra_opts,
+            lambda d: self._progress_hook(d, progress_callback, path_container),
+        )
 
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 ydl.download([url])
         except DownloadError as exc:
-            raise YtDlpError(f"Download failed: {exc}") from exc
+            self._handle_download_error(exc)
 
+        final_path = path_container["final_path"]
         if final_path is None or not final_path.exists():
             raise YtDlpError(
                 "Download finished but the output file could not be determined."
             )
         return final_path
+
+    def _progress_hook(
+        self,
+        d: ProgressDict,
+        callback: Callable[[dict[str, Any]], Any] | None,
+        path_container: dict[str, Path | None],
+    ) -> None:
+        """Internal hook to track progress and final filename."""
+        if d.get("status") == "finished" and "filename" in d:
+            path_container["final_path"] = Path(d["filename"])
+        if callback:
+            callback(cast(dict[str, Any], d))
+
+    def _handle_download_error(self, exc: DownloadError) -> None:
+        """Handles yt-dlp download errors."""
+        msg = str(exc).lower()
+        if "members-only" in msg or "members on level" in msg:
+            raise YtDlpError(
+                "This is a members-only video. Please ensure you have a valid "
+                "cookies.txt file configured in System Parameters."
+            ) from exc
+        raise YtDlpError(f"Download failed: {exc}") from exc
+
+    def _build_ydl_opts(
+        self,
+        output_dir: Path,
+        extra_opts: dict[str, Any] | None,
+        hook: Callable[[ProgressDict], None],
+    ) -> dict[str, Any]:
+        """Helper to build yt-dlp options."""
+        opts = self.get_opts(extra_opts)
+        opts["outtmpl"] = str(output_dir / self.output_template)
+        opts["progress_hooks"] = [hook]
+        return opts
 
     async def download_async(
         self,

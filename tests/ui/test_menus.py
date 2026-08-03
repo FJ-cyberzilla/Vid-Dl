@@ -1,16 +1,15 @@
+from typing import Any
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from sota_dl.ui.menus import launch_command_center
-
-# This is a very complex module, testing it will require significant mocking
-# due to its tight coupling with console I/O and various services.
-# This test is just to ensure the main menu can at least be initialized.
 
 
 @patch("sota_dl.ui.menus.check_ffmpeg", return_value=True)
 @patch("sota_dl.ui.menus.Prompt.ask")
 @patch("sota_dl.ui.menus.menu_renderer.render_dashboard")
-def test_launch_command_center_termination(mock_render, mock_prompt, mock_check_ffmpeg):
+def test_launch_command_center_termination(
+    mock_render: Any, mock_prompt: MagicMock, mock_check_ffmpeg: Any
+) -> None:
     # Setup mock to terminate immediately
     mock_prompt.return_value = "4"
 

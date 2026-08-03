@@ -1,3 +1,4 @@
+from typing import Any
 from unittest.mock import patch
 from sota_dl.ui.settings_manager import update_cookies, update_download_path
 
@@ -6,7 +7,9 @@ from sota_dl.ui.settings_manager import update_cookies, update_download_path
 @patch("sota_dl.ui.settings_manager.print_success")
 @patch("sota_dl.ui.settings_manager.print_error")
 @patch("sota_dl.ui.settings_manager._config_service")
-def test_update_cookies_success(mock_service, mock_error, mock_success, mock_prompt):
+def test_update_cookies_success(
+    mock_service: Any, mock_error: Any, mock_success: Any, mock_prompt: Any
+) -> None:
     mock_prompt.return_value = "cookies.txt"
     mock_service.update_cookies_path.return_value = (
         True,
@@ -24,7 +27,9 @@ def test_update_cookies_success(mock_service, mock_error, mock_success, mock_pro
 @patch("sota_dl.ui.settings_manager.print_success")
 @patch("sota_dl.ui.settings_manager.print_error")
 @patch("sota_dl.ui.settings_manager._config_service")
-def test_update_cookies_failure(mock_service, mock_error, mock_success, mock_prompt):
+def test_update_cookies_failure(
+    mock_service: Any, mock_error: Any, mock_success: Any, mock_prompt: Any
+) -> None:
     mock_prompt.return_value = "non_existent.txt"
     mock_service.update_cookies_path.return_value = (False, "Source not found")
 
@@ -40,8 +45,8 @@ def test_update_cookies_failure(mock_service, mock_error, mock_success, mock_pro
 @patch("sota_dl.ui.settings_manager.print_error")
 @patch("sota_dl.ui.settings_manager._config_service")
 def test_update_download_path_success(
-    mock_service, mock_error, mock_success, mock_prompt
-):
+    mock_service: Any, mock_error: Any, mock_success: Any, mock_prompt: Any
+) -> None:
     mock_prompt.return_value = "downloads"
     mock_service.update_download_path.return_value = (True, "Target updated: downloads")
 
@@ -57,8 +62,8 @@ def test_update_download_path_success(
 @patch("sota_dl.ui.settings_manager.print_error")
 @patch("sota_dl.ui.settings_manager._config_service")
 def test_update_download_path_failure(
-    mock_service, mock_error, mock_success, mock_prompt
-):
+    mock_service: Any, mock_error: Any, mock_success: Any, mock_prompt: Any
+) -> None:
     mock_prompt.return_value = "readonly"
     mock_service.update_download_path.return_value = (False, "Target not writable")
 

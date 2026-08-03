@@ -110,43 +110,59 @@ class AndroidInnertubeAdapter:
         self, data: dict[str, Any], original_url: str
     ) -> VideoMetadata:
         """Maps the raw Innertube JSON to sota_dl's VideoMetadata model."""
-
-        playability = data.get("playabilityStatus", {})
-        if playability.get("status") != "OK":
-            reason = playability.get("reason", "Unknown block")
-            logger.warning(
-                "Video unplayable via Android client",
-                url=original_url,
-                reason=reason,
-            )
-            raise ExtractionError(
-                f"Video unplayable via Android client: {reason}",
-                url=original_url,
-                reason=reason,
-            )
+        self._validate_playability(data, original_url)
 
         details = data.get("videoDetails", {})
-        streaming_data = data.get("streamingData", {})
+        streams = self._extract_streams(data.get("streamingData", {}), original_url)
 
-        # Extract direct stream URLs
-        formats = streaming_data.get("formats", [])
-        adaptive_formats = streaming_data.get("adaptiveFormats", [])
+        return VideoMetadata(
+            title=details.get("title", "Unknown Title"),
+            url=original_url,
+            webpage_url=original_url,
+            duration=int(details.get("lengthSeconds", 0)),
+            uploader=details.get("author", "Unknown"),
+            view_count=int(details.get("viewCount", 0)),
+            formats=streams,
+        )
 
-        # Merge all formats for the fallback downloader to pick from
-        all_streams = []
-        for fmt in formats + adaptive_formats:
-            # Note: Some streams use 'signatureCipher' instead of 'url'.
-            # We skip ciphered streams here unless you build a decryptor.
-            if "url" in fmt:
-                all_streams.append(
-                    {
-                        "url": fmt["url"],
-                        "quality": fmt.get("qualityLabel") or fmt.get("audioQuality"),
-                        "mimeType": fmt.get("mimeType"),
-                        "bitrate": fmt.get("bitrate"),
-                        "contentLength": fmt.get("contentLength"),
-                    }
-                )
+    def _validate_playability(self, data: dict[str, Any], original_url: str) -> None:
+        """Validates if the video is playable."""
+        playability = data.get("playabilityStatus", {})
+        if playability.get("status") == "OK":
+            return
+
+        reason = playability.get("reason", "Unknown block")
+        logger.warning(
+            "Video unplayable via Android client",
+            url=original_url,
+            reason=reason,
+        )
+        raise ExtractionError(
+            f"Video unplayable via Android client: {reason}",
+            url=original_url,
+            reason=reason,
+        )
+
+    def _extract_streams(
+        self, streaming_data: dict[str, Any], original_url: str
+    ) -> list[dict[str, Any]]:
+        """Extracts available stream formats."""
+        all_formats = streaming_data.get("formats", []) + streaming_data.get(
+            "adaptiveFormats",
+            [],
+        )
+
+        all_streams = [
+            {
+                "url": fmt["url"],
+                "quality": fmt.get("qualityLabel") or fmt.get("audioQuality"),
+                "mimeType": fmt.get("mimeType"),
+                "bitrate": fmt.get("bitrate"),
+                "contentLength": fmt.get("contentLength"),
+            }
+            for fmt in all_formats
+            if "url" in fmt
+        ]
 
         if not all_streams:
             logger.warning("No direct URLs found", url=original_url)
@@ -155,14 +171,4 @@ class AndroidInnertubeAdapter:
                 url=original_url,
                 reason="No direct URLs",
             )
-
-        # Map to sota_dl protocol
-        return VideoMetadata(
-            title=details.get("title", "Unknown Title"),
-            url=original_url,  # Compatible with original model
-            webpage_url=original_url,
-            duration=int(details.get("lengthSeconds", 0)),
-            uploader=details.get("author", "Unknown"),
-            view_count=int(details.get("viewCount", 0)),
-            formats=all_streams,
-        )
+        return all_streams

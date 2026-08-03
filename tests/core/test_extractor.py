@@ -5,24 +5,27 @@ from pathlib import Path
 from typing import Any
 import pytest
 from sota_dl.core.extractor import MediaExtractor, ExtractorConfig, ExtractionError
-from sota_dl.infrastructure.cache import CacheConfig, MetadataCache
+from sota_dl.infrastructure.cache.cache_manager import CacheManager
+from sota_dl.infrastructure.cache.async_adapter import AsyncCacheAdapter
 
 
 @pytest.mark.asyncio
 async def test_extractor_cache_hit(tmp_path: Path) -> None:
-    cache = MetadataCache(CacheConfig(db_path=tmp_path / "test.db"))
+    cache_manager = CacheManager(cache_dir=tmp_path / "cache")
+    cache = AsyncCacheAdapter(cache_manager)
     await cache.set("https://example.com/test", {"id": "123", "title": "Test Title"})
 
     extractor = MediaExtractor(cache=cache)
     info = await extractor.extract_info("https://example.com/test")
 
-    assert info["id"] == "123"
-    assert info["title"] == "Test Title"
+    assert info.video_id == "123"
+    assert info.title == "Test Title"
 
 
 @pytest.mark.asyncio
 async def test_extractor_ytdlp_success(tmp_path: Path) -> None:
-    cache = MetadataCache(CacheConfig(db_path=tmp_path / "test.db"))
+    cache_manager = CacheManager(cache_dir=tmp_path / "cache")
+    cache = AsyncCacheAdapter(cache_manager)
     extractor = MediaExtractor(cache=cache)
 
     mock_info = {"id": "v999", "title": "Extracted Title"}
@@ -32,7 +35,7 @@ async def test_extractor_ytdlp_success(tmp_path: Path) -> None:
     ) as mock_sync:
         info = await extractor.extract_info("https://example.com/new_video")
 
-        assert info["id"] == "v999"
+        assert info.video_id == "v999"
         mock_sync.assert_called_once_with("https://example.com/new_video")
 
         # Verify it was written to cache
@@ -49,7 +52,8 @@ def test_extractor_config_to_dict() -> None:
 
 @patch("yt_dlp.YoutubeDL")
 def test_run_ytdlp_sync_failure(mock_ytdl: Any, tmp_path: Path) -> None:
-    cache = MetadataCache(CacheConfig(db_path=tmp_path / "test.db"))
+    cache_manager = CacheManager(cache_dir=tmp_path / "cache")
+    cache = AsyncCacheAdapter(cache_manager)
     extractor = MediaExtractor(cache=cache)
 
     mock_instance = mock_ytdl.return_value.__enter__.return_value

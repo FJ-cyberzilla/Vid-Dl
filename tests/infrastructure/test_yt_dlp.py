@@ -67,6 +67,22 @@ def test_download_failure(
 
 
 @patch("sota_dl.infrastructure.adapters.yt_dlp.yt_dlp.YoutubeDL")
+def test_download_members_only_error(
+    mock_ydl_class: MagicMock, engine: YtDlpEngine, tmp_path: Path
+) -> None:
+    mock_ydl = MagicMock()
+    mock_ydl_class.return_value.__enter__.return_value = mock_ydl
+
+    mock_ydl.download.side_effect = DownloadError(
+        "ERROR: [youtube] RUv4Tz_edN8: This video is available to "
+        "this channel's members on level: Newborn"
+    )
+
+    with pytest.raises(YtDlpError, match="This is a members-only video"):
+        engine.download("http://example.com", tmp_path)
+
+
+@patch("sota_dl.infrastructure.adapters.yt_dlp.yt_dlp.YoutubeDL")
 def test_download_missing_file_error(
     mock_ydl_class: MagicMock, engine: YtDlpEngine, tmp_path: Path
 ) -> None:

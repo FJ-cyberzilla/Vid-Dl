@@ -6,6 +6,7 @@ from .errors import (
     NetworkError,
     DiskSpaceError,
 )
+from .cache.cache_manager import CacheManager
 from sota_dl.infrastructure.adapters import (
     Aria2cClient,
     FFmpegProcessor,
@@ -26,6 +27,7 @@ __all__ = [
     "DRMError",
     "NetworkError",
     "DiskSpaceError",
+    "CacheManager",
     "Aria2cClient",
     "FFmpegProcessor",
     "PyBaltEngine",

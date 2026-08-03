@@ -1,4 +1,5 @@
 import pytest
+from collections.abc import Generator
 from unittest.mock import MagicMock, patch
 from sota_dl.ui.progress_bars import (
     RichProgressReporter,
@@ -9,14 +10,15 @@ from rich.progress import Progress
 
 
 @pytest.fixture(autouse=True)
-def cleanup_progress():
+def cleanup_progress() -> Generator[None, None, None]:
     reset_progress()
     yield
     reset_progress()
 
 
-def test_rich_progress_reporter():
+def test_rich_progress_reporter() -> None:
     mock_progress = MagicMock(spec=Progress)
+    mock_progress.add_task.return_value = 0
     reporter = RichProgressReporter(mock_progress)
 
     task_id = reporter.add_task("test", total=100)
@@ -36,7 +38,7 @@ def test_rich_progress_reporter():
     mock_progress.remove_task.assert_called_with(0)
 
 
-def test_get_sota_progress_tty():
+def test_get_sota_progress_tty() -> None:
     with patch("sys.stdout.isatty", return_value=True):
         reporter = get_sota_progress()
         assert isinstance(reporter, RichProgressReporter)
@@ -44,7 +46,7 @@ def test_get_sota_progress_tty():
         assert get_sota_progress() is reporter
 
 
-def test_get_sota_progress_not_tty():
+def test_get_sota_progress_not_tty() -> None:
     with patch("sys.stdout.isatty", return_value=False):
         # We need a fresh call to test the non-tty path
         reset_progress()

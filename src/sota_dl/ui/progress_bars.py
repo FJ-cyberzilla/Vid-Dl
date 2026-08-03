@@ -99,7 +99,7 @@ def get_sota_progress() -> ProgressReporter:
         progress = Progress(
             TextColumn("[dim]"),
             transient=True,
-            refresh_per_second=0,
+            refresh_per_second=10,
             disable=True,
         )
         reporter = RichProgressReporter(progress)

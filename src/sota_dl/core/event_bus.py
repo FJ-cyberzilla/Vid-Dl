@@ -86,8 +86,25 @@ class DownloadStateChangedEvent(Event):
 
 
 @dataclass(slots=True, frozen=True)
+class OAuth2RequiredEvent(Event):
+    """Emitted when an interactive OAuth2 device authorization code is generated."""
+
+    user_code: str
+    auth_url: str = "https://www.google.com/device"
+
+
+@dataclass(slots=True, frozen=True)
+class ExtractorFallbackEvent(Event):
+    """Fired when primary extraction is blocked and a fallback adapter takes over."""
+
+    url: str
+    reason: str
+    fallback_target: str = "Android Innertube API"
+
+
+@dataclass(slots=True, frozen=True)
 class ShutdownEvent(Event):
-    """Event emitted when the application is shutting down."""
+    """Emitted when the application is shutting down."""
 
 
 class EventBus:

@@ -1,4 +1,5 @@
 import pytest
+from typing import Any
 from unittest.mock import MagicMock, patch
 from pathlib import Path
 from sota_dl.ui.download_handler import handle_results, execute_download
@@ -6,23 +7,17 @@ from sota_dl.core.models import DownloadResult, DownloadStatus
 
 
 @pytest.fixture
-def mock_result():
+def mock_result() -> DownloadResult:
     return DownloadResult(
-        title="Test Video",
-        url="http://test.url",
         status=DownloadStatus.COMPLETED,
-        path=Path("video.mp4"),
+        file_path=Path("video.mp4"),
     )
 
 
-def test_handle_results_success(capsys, tmp_path):
+def test_handle_results_success(capsys: Any, tmp_path: Path) -> None:
     results = [
-        DownloadResult(
-            title="1", url="u1", status=DownloadStatus.COMPLETED, path=Path("p1")
-        ),
-        DownloadResult(
-            title="2", url="u2", status=DownloadStatus.COMPLETED, path=Path("p2")
-        ),
+        DownloadResult(status=DownloadStatus.COMPLETED, file_path=Path("p1")),
+        DownloadResult(status=DownloadStatus.COMPLETED, file_path=Path("p2")),
     ]
     output_path = tmp_path
 
@@ -32,14 +27,10 @@ def test_handle_results_success(capsys, tmp_path):
         assert "2 downloads completed" in mock_print.call_args[0][0]
 
 
-def test_handle_results_mixed(capsys, tmp_path):
+def test_handle_results_mixed(capsys: Any, tmp_path: Path) -> None:
     results = [
-        DownloadResult(
-            title="1", url="u1", status=DownloadStatus.COMPLETED, path=Path("p1")
-        ),
-        DownloadResult(
-            title="2", url="u2", status=DownloadStatus.FAILED, path=Path("p2")
-        ),
+        DownloadResult(status=DownloadStatus.COMPLETED, file_path=Path("p1")),
+        DownloadResult(status=DownloadStatus.FAILED, file_path=Path("p2")),
     ]
     output_path = tmp_path
 
@@ -53,22 +44,20 @@ def test_handle_results_mixed(capsys, tmp_path):
 
 @patch("sota_dl.ui.download_handler.get_quality_choice")
 @patch("sota_dl.ui.download_handler._get_downloader_factory")
-@patch("sota_dl.ui.download_handler.DownloadService")
 @patch("sota_dl.ui.download_handler.handle_results")
 @patch("sota_dl.ui.download_handler.input")
 @patch("sota_dl.ui.download_handler.console.print")
 def test_execute_download_success(
-    mock_print,
-    mock_input,
-    mock_handle,
-    mock_service,
-    mock_factory,
-    mock_quality,
-    tmp_path,
-):
+    mock_print: Any,
+    mock_input: Any,
+    mock_handle: Any,
+    mock_factory: Any,
+    mock_quality: Any,
+    tmp_path: Path,
+) -> None:
     mock_quality.return_value = "best"
     mock_service_instance = MagicMock()
-    mock_service.return_value = mock_service_instance
+    mock_factory.return_value.return_value = mock_service_instance
 
     execute_download("1", "target_url", tmp_path)
 
@@ -78,16 +67,19 @@ def test_execute_download_success(
 
 @patch("sota_dl.ui.download_handler.get_quality_choice")
 @patch("sota_dl.ui.download_handler._get_downloader_factory")
-@patch("sota_dl.ui.download_handler.DownloadService")
 @patch("sota_dl.ui.download_handler.input")
 @patch("sota_dl.ui.download_handler.console.print")
 def test_execute_download_interrupt(
-    mock_print, mock_input, mock_service, mock_factory, mock_quality, tmp_path
-):
+    mock_print: Any,
+    mock_input: Any,
+    mock_factory: Any,
+    mock_quality: Any,
+    tmp_path: Path,
+) -> None:
     mock_quality.return_value = "best"
     mock_service_instance = MagicMock()
     mock_service_instance.process_target.side_effect = KeyboardInterrupt
-    mock_service.return_value = mock_service_instance
+    mock_factory.return_value.return_value = mock_service_instance
 
     execute_download("1", "target_url", tmp_path)
 

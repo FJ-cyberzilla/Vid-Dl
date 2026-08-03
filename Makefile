@@ -26,7 +26,7 @@ BRAND     := $(BOLD)$(VIOLET)FJ™ Cyberzilla Systems$(RESET)
 
 .DEFAULT_GOAL := help
 .PHONY: help install dev update run diagnose lint format clean test coverage build menu \
-        install-completion sync
+        install-completion sync about
 
 # ==============================================================================
 # TARGETS
@@ -38,14 +38,14 @@ run: ## Launch the application
 	@PYTHONPATH=src python3 -m sota_dl.main
 
 menu: ## Launch interactive command selector (fzf / select fallback)
-	@if command -v fzf >/dev/null 2>&1; then \
-		target=$$(awk '/^[a-zA-Z_-]+:.*?##/ { sub(":.*##", " —"); print }' $(MAKEFILE_LIST) | \
+	@bash -c 'if command -v fzf >/dev/null 2>&1; then \
+		target=$$(awk "/^[a-zA-Z_-]+:.*?##/ { sub(/:.*##/, \" —\"); print }" $(MAKEFILE_LIST) | \
 			fzf --ansi \
 			    --header="❖ SOTA Downloader — Target Chooser" \
-			    --color="fg+:255,bg+:236,header:51,info:141,pointer:198,prompt:51" \
+			    --color="fg+:220,bg+:141,header:51,info:141,pointer:198,prompt:51" \
 			    --prompt="❯ Execute target: " \
 			    --height=45% --layout=reverse --border=rounded | \
-			awk '{print $$1}'); \
+			awk "{print \$$1}"); \
 		if [ -n "$$target" ]; then \
 			printf "\n $(ICON_NODE) $(CYAN)Executing target: $(BOLD)%s$(RESET)\n\n" "$$target"; \
 			$(MAKE) $$target; \
@@ -53,13 +53,13 @@ menu: ## Launch interactive command selector (fzf / select fallback)
 	else \
 		printf " $(ICON_WARN) $(AMBER)fzf not installed. Using fallback menu:$(RESET)\n\n"; \
 		PS3="❯ Select target number: "; \
-		targets=($$(grep -E '^[a-zA-Z_-]+:.*?##' $(MAKEFILE_LIST) | cut -d: -f1)); \
+		targets=($$(grep -E "^[a-zA-Z_-]+:.*?##" $(MAKEFILE_LIST) | cut -d: -f1)); \
 		select target in "$${targets[@]}" "Quit"; do \
 			if [ "$$target" = "Quit" ] || [ -z "$$target" ]; then break; fi; \
 			$(MAKE) $$target; \
 			break; \
 		done; \
-	fi
+	fi'
 
 ##@ 📦 Environment & Setup
 install: ## Install main dependencies (production)
@@ -166,6 +166,31 @@ clean: ## Purge caches, build artifacts, and coverage data
 	@printf " $(ICON_OK) $(EMERALD)Workspace cleaned.$(RESET)\n"
 
 ##@ 💡 System Help
+about: ## Display information about the application, architecture, and developers
+	@printf "\n"
+	@printf " $(VIOLET)┌────────────────────────────────────────────────────────────────────────────┐$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(CYAN)SOTA Vid-Dl — System Infographic$(RESET)                                          $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)├────────────────────────────────────────────────────────────────────────────┤$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(AMBER)Core Capabilities:$(RESET)                                                         $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Multi-threaded async extraction of high-grade audio and video streams.$(RESET) $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Automated OAuth device flow authentication for uninterrupted sessions.$(RESET)  $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Smart, zero-trust caching layer optimized for mobile file systems.$(RESET)     $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Seamless integration with multi-backend networks (yt-dlp & aria2c).$(RESET)    $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)                                                                            $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(EMERALD)Architecture Overview:$(RESET)                                                    $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(WHITE)  [ CLI Layer ]   ──>   [ Orchestrator ]   ──>   [ Downloader/Service ]   $(RESET)$(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)         │                     │                         │                  $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)         ▼                     ▼                         ▼                  $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  [ Rich UI View ]       [ Event Bus ]         [ Adapters (yt-dlp, ffmpeg) ]$(RESET)$(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)                                                                            $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(ROSE)Development & Engineering:$(RESET)                                                 $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(WHITE)Built with Python 3.13+, asyncio, Pydantic, and rich layouts.$(RESET)              $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(WHITE)Strict PEP 8, Ruff compliance, and robust SOLID design principles.$(RESET)         $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)                                                                            $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(WHITE)Engineering & Architecture by $(RESET)$(BRAND)                                $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)└────────────────────────────────────────────────────────────────────────────┘$(RESET)\n"
+	@printf "\n"
+
 help: ## Display this categorized command overview
 	@printf "\n"
 	@printf " $(CYAN) _______ _______ _______ _______      ___ ___ __     __        _____  __ $(RESET)\n"

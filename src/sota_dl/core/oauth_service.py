@@ -1,6 +1,7 @@
 import asyncio
 import structlog
 
+from sota_dl.config.constants import TOKEN_ENDPOINT, DEVICE_CODE_URL
 from sota_dl.core.config_service import ConfigurationService
 from sota_dl.core.event_bus import EventBus, OAuth2RequiredEvent
 from sota_dl.infrastructure.network import NetworkManager
@@ -10,8 +11,6 @@ logger = structlog.get_logger(__name__)
 
 class OAuth2DeviceFlowService:
     """Service to handle the OAuth2 Device Authorization Flow."""
-
-    TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"  # noqa: S105
 
     def __init__(
         self,
@@ -30,16 +29,13 @@ class OAuth2DeviceFlowService:
         """Initiates the OAuth2 device flow and publishes the required event."""
         logger.info("Initiating OAuth2 device flow")
 
-        # Google OAuth2 Device Flow endpoint
-        device_code_url = "https://oauth2.googleapis.com/device/code"
-
         payload = {
             "client_id": self._client_id,
             "scope": "https://www.googleapis.com/auth/youtube.readonly",
         }
 
         try:
-            response = await self._network.post_async(device_code_url, data=payload)
+            response = await self._network.post_async(DEVICE_CODE_URL, data=payload)
             response.raise_for_status()
             data = response.json()
 
@@ -76,9 +72,7 @@ class OAuth2DeviceFlowService:
         for _ in range(30):  # Adjust polling attempts as needed
             await asyncio.sleep(5)  # Poll interval
             try:
-                response = await self._network.post_async(
-                    self.TOKEN_ENDPOINT, data=payload
-                )
+                response = await self._network.post_async(TOKEN_ENDPOINT, data=payload)
                 if response.status_code == 200:
                     data = response.json()
                     logger.info("Successfully obtained tokens")

@@ -1,9 +1,6 @@
 """Core orchestration service for managing download tasks."""
 
-import os
 import logging
-import threading
-from pathlib import Path
 from typing import Any
 
 from sota_dl.core.event_bus import EventBus
@@ -15,6 +12,8 @@ from sota_dl.core.protocols import (
     TaskID,
 )
 from sota_dl.core.fallback import FallbackDownloader
+from sota_dl.core.target_resolver import TargetResolver
+from sota_dl.core.task_state_manager import TaskStateManager
 
 logger = logging.getLogger(__name__)
 
@@ -44,41 +43,27 @@ class DownloadService:
         self.progress_reporter = progress_reporter
         self.event_bus = event_bus
 
-        # Internal state management
-        self._pause_event = threading.Event()
-        self._pause_event.set()
-        self._cancelled = False
-        self._status: DownloadStatus = DownloadStatus.PENDING
-
+        self._state_manager = TaskStateManager()
         self._current_task_id: TaskID | None = None
         self._results: list[DownloadResult] = []
 
     def reset(self) -> None:
-        self._cancelled = False
-        self._pause_event.set()
-        self._status = DownloadStatus.DOWNLOADING
+        self._state_manager.reset()
 
     def cancel(self) -> None:
-        self._cancelled = True
-        self._pause_event.set()
-        self._status = DownloadStatus.CANCELLED
+        self._state_manager.cancel()
         logger.info("Download cancellation requested.")
 
     def pause(self) -> None:
-        self._pause_event.clear()
-        self._status = DownloadStatus.PAUSED
+        self._state_manager.pause()
         logger.info("Download paused.")
 
     def resume(self) -> None:
-        self._pause_event.set()
-        self._status = DownloadStatus.DOWNLOADING
+        self._state_manager.resume()
         logger.info("Download resumed.")
 
     def _check_state(self) -> None:
-        if not self._pause_event.is_set():
-            self._pause_event.wait()
-        if self._cancelled:
-            raise Exception("Download cancelled by user")
+        self._state_manager.check_state()
 
     def process_target(
         self,
@@ -92,7 +77,7 @@ class DownloadService:
         self._results = []
 
         opts = options or self.default_options
-        urls = self._resolve_targets(target)
+        urls = TargetResolver.resolve(target)
 
         if self.progress_reporter:
             task_id = self.progress_reporter.add_task(
@@ -117,13 +102,12 @@ class DownloadService:
 
     def _execute_download_loop(self, urls: list[str], opts: DownloadOptions) -> None:
         for idx, url in enumerate(urls, start=1):
-            if self._cancelled:
+            if self._state_manager.cancelled:
                 break
             self._check_state()
 
             logger.info("Downloading [%d/%d]: %s", idx, len(urls), url)
 
-            # Using the backend directly for single download execution
             try:
                 result = self.downloader.download(url, opts, self._progress_hook)
             except Exception as e:
@@ -134,8 +118,6 @@ class DownloadService:
 
     def _progress_hook(self, d: dict[str, Any]) -> None:
         self._check_state()
-        # Progress hooks are now handled here if needed,
-        # or passed through to a specific backend
         pass
 
     def _update_loop_progress(
@@ -155,24 +137,6 @@ class DownloadService:
             status=DownloadStatus.FAILED,
             error=str(error),
         )
-
-    def _resolve_targets(self, target: str) -> list[str]:
-        target = target.strip()
-        if os.path.isfile(target) and target.lower().endswith((".txt", ".lst")):
-            return self._parse_batch_file(target)
-        return [target]
-
-    def _parse_batch_file(self, file_path: str) -> list[str]:
-        urls = []
-        path = Path(file_path)
-        for line in path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            urls.append(line)
-        if not urls:
-            raise ValueError("Batch file contains no valid URLs.")
-        return urls
 
     @property
     def results(self) -> list[DownloadResult]:

@@ -43,8 +43,8 @@ def render_dashboard(output_path: Path) -> None:
 
     menu_table.add_row("1", f"[{VINTAGE_RED}]EXCERPT VIDEO STREAM (MP4/MKV)[/]")
     menu_table.add_row("2", f"[{VINTAGE_YELLOW}]EXTRACT AUDIO STREAM (MP3/M4A)[/]")
-    menu_table.add_row("3", f"[{VINTAGE_PINK}]CONFIGURE SYSTEM PARAMETERS[/]")
-    menu_table.add_row("4", f"[{VINTAGE_ORANGE}]TERMINATE SESSION[/]")
+    menu_table.add_row("3", f"[{VINTAGE_PINK}]EXECUTE SYSTEM PARAMETERS[/]")
+    menu_table.add_row("4", f"[{VINTAGE_ORANGE}]EXIT SESSION[/]")
 
     menu_panel = Panel(
         menu_table,

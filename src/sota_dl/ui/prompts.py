@@ -1,5 +1,6 @@
 """Prompting utilities."""
 
+import io
 from rich.prompt import Prompt
 from rich.panel import Panel
 from rich.table import Table
@@ -64,3 +65,40 @@ def get_quality_choice(is_audio: bool) -> str:
     """
     console.print("\n")
     return get_audio_quality() if is_audio else get_video_quality()
+
+
+def show_qr_code(url: str) -> None:
+    """
+    Renders a QR code in the terminal.
+    Gracefully falls back if qrcode library is not installed.
+    Adapts layout for narrow terminals.
+    """
+    try:
+        import qrcode  # type: ignore
+    except ImportError:
+        return
+
+    qr = qrcode.QRCode(version=1, box_size=1, border=1)
+    qr.add_data(url)
+    qr.make(fit=True)
+
+    # Inverted ASCII blocks for dark backgrounds
+    f = io.StringIO()
+    qr.print_ascii(out=f, invert=True)
+    qr_str = f.getvalue()
+
+    if console.width < 70:
+        # Vertical layout for narrow screens
+        console.print(f"[{TEXT}]Scan this QR code to continue:[/]")
+        console.print(qr_str)
+    else:
+        # Standard layout
+        console.print(
+            Panel(
+                qr_str,
+                title=f"[bold {THEME}]AUTHORIZATION REQUIRED[/]",
+                subtitle=f"[{TEXT}]Scan to authorize[/]",
+                border_style=THEME,
+                padding=(0, 2),
+            )
+        )

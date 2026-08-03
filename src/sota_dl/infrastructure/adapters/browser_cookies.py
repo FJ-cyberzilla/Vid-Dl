@@ -584,15 +584,41 @@ class BrowserCookieAdapter:
             error="All extraction methods failed",
         )
 
+    def load_cookies_from_file(self, cookie_file: Path) -> dict[str, str]:
+        """Extract all cookies from a Netscape/Mozilla formatted cookies.txt file."""
+        if not cookie_file.exists():
+            return {}
+
+        try:
+            cookies: dict[str, str] = {}
+            with open(cookie_file, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+
+                    parts = line.split("\t")
+                    if len(parts) < 7:
+                        continue
+
+                    cookies[parts[5]] = parts[6]
+            return cookies
+        except Exception as e:
+            logger.error(f"cookies.txt read failed: {e}")
+            return {}
+
     def _extract_from_netscape_format(self, domain: str) -> ExtractionResult:
-        """Extract cookies from a Netscape/Mozilla formatted cookies.txt file."""
+        """
+        Extract cookies from a Netscape/Mozilla formatted cookies.txt file
+        filtered by domain.
+        """
         if not COOKIES_PATH.exists():
             return ExtractionResult(
                 success=False, cookies={}, error="cookies.txt not found"
             )
 
         try:
-            cookies: dict[str, str] = {}
+            cookies_dict: dict[str, str] = {}
             with open(COOKIES_PATH, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
@@ -604,13 +630,12 @@ class BrowserCookieAdapter:
                         continue
 
                     cookie_domain = parts[0]
-                    # Check if domain matches (very simple check)
                     if domain in cookie_domain or cookie_domain in domain:
-                        cookies[parts[5]] = parts[6]
+                        cookies_dict[parts[5]] = parts[6]
 
-            if cookies:
+            if cookies_dict:
                 return ExtractionResult(
-                    success=True, cookies=cookies, source="cookies_txt"
+                    success=True, cookies=cookies_dict, source="cookies_txt"
                 )
 
             return ExtractionResult(
@@ -979,9 +1004,7 @@ class BrowserCookieAdapter:
         for name, value in cookies.items():
             cookie_meta = cast(CookieMetadata, metadata.get(name, {}))
 
-            if (
-                self.validate_expiry or domain_only
-            ) and not CookieValidator.is_valid(
+            if (self.validate_expiry or domain_only) and not CookieValidator.is_valid(
                 cookie_meta, domain if domain_only else ""
             ):
                 continue

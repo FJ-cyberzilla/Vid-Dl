@@ -12,6 +12,7 @@ logger = structlog.get_logger(__name__)
 
 # ... (Previous BrowserType and BrowserPathResolver classes) ...
 
+
 class DecryptionStrategy(ABC):
     @abstractmethod
     def decrypt(self, encrypted_value: bytes) -> str | None:
@@ -70,14 +71,18 @@ class CookieValidator:
         cookie_domain = cookie_meta.get("domain", "").lstrip(".")
         if not cookie_domain or not domain:
             return True
-        
+
         is_match = (
             cookie_domain == domain
             or domain.endswith(f".{cookie_domain}")
             or cookie_domain.endswith(f".{domain}")
         )
         if not is_match:
-            logger.debug("Cookie domain mismatch", domain=cookie_meta.get("domain"), target=domain)
+            logger.debug(
+                "Cookie domain mismatch",
+                domain=cookie_meta.get("domain"),
+                target=domain,
+            )
         return is_match
 
 

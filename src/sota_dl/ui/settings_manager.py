@@ -39,20 +39,43 @@ def _handle_cookie_extraction() -> None:
         print_error(message)
 
 
+def update_timeout() -> None:
+    """Handle timeout update."""
+    new_timeout = Prompt.ask(f"[{THEME}]Enter new timeout (seconds)[/]")
+    success, message = _config_service.update_timeout(new_timeout)
+    if success:
+        print_success(message)
+    else:
+        print_error(message)
+
+
+def toggle_debug() -> None:
+    """Toggle debug mode."""
+    message = _config_service.toggle_debug()
+    print_success(message)
+
+
 def handle_settings() -> None:
     """Handle the settings menu with a clean panel."""
     handlers = {
         "1": update_cookies,
         "2": update_download_path,
         "3": _handle_cookie_extraction,
+        "4": update_timeout,
+        "5": toggle_debug,
     }
 
     while True:
         menu_renderer.render_settings_menu(
-            settings.COOKIES_PATH, settings.get_download_path()
+            settings.COOKIES_PATH,
+            settings.get_download_path(),
+            settings.TIMEOUT,
+            settings.DEBUG,
         )
 
-        choice = menu_renderer.get_menu_selection("Select Option", ["1", "2", "3", "4"])
+        choice = menu_renderer.get_menu_selection(
+            "Select Option", ["1", "2", "3", "4", "5", "6"]
+        )
 
         if choice in handlers:
             handlers[choice]()

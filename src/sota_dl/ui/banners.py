@@ -20,12 +20,13 @@ BRANDING = "FJ™ Cybertronic Systems"
 # ASCII Art Banner using a new user-provided style
 ASCII_BANNER = f"""
 [bold {ACCENT}]
-██╗   ██╗██╗██████╗               ██████╗ ██╗     
-██║   ██║██║██╔══██╗              ██╔══██╗██║     
-██║   ██║██║██║  ██║    █████╗    ██║  ██║██║     
-╚██╗ ██╔╝██║██║  ██║    ╚════╝    ██║  ██║██║     
- ╚████╔╝ ██║██████╔╝              ██████╔╝███████╗
-  ╚═══╝  ╚═╝╚═════╝               ╚═════╝ ╚══════╝
+dP     dP oo       dP    888888ba  dP 
+88     88          88    88    `8b 88 
+88    .8P dP .d888b88    88     88 88 
+88    d8' 88 88'  `88    88     88 88 
+88  .d8P  88 88.  .88    88    .8P 88 
+888888'   dP `88888P8    8888888P  dP 
+oooooooooooooooooooooooooooooooooooooo
 [/]"""
 
 # ---- Console Management ----
