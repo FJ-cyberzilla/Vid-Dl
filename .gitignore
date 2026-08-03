@@ -35,6 +35,7 @@ cookies.txt
 *.wvd
 *.der
 client_id.bin
+data/
 
 # Documentation & Local Config
 GEMINI.md
@@ -70,3 +71,7 @@ test_import.py
 *.tmp
 refactor.txt
 refine.txt
+
+# Infrastructure caches and cookie adapters
+src/sota_dl/infrastructure/cache/
+src/sota_dl/infrastructure/adapters/cookies/
