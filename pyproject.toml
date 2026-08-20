@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "sota-downloader"
 version = "2.0.0"
 description = "A modular, terminal-based media extraction tool optimized for Android/Termux."
-authors = [{name = "User", email = "user@example.com"}]
+authors = [{name = "FJ-cyberzilla", email = "FJ-cyberzilla@example.com"}]
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -27,8 +27,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/yourusername/sota-downloader"
-Issues = "https://github.com/yourusername/sota-downloader/issues"
+Homepage = "https://github.com/FJ-cyberzilla/sota-downloader"
+Issues = "https://github.com/FJ-cyberzilla/sota-downloader/issues"
+Branding = "FJ™ Cybertronic systems"
 
 [project.optional-dependencies]
 mobile = ["qrcode>=7.4.2"]
