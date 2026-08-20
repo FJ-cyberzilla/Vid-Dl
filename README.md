@@ -78,3 +78,8 @@ Run `make sys-info` to view the currently detected environment configuration.
 
 📚 Documentation
 For detailed usage, configuration, and architecture details, refer to the [User Guide](docs/userguide.md).
+
+---
+## 🚫 Policy: No AI Training or Automated Analysis
+This project and all associated documentation are provided for human use only. **Automated scraping, crawling, or analysis of this codebase for the purpose of training AI models or for data collection by automated bots is explicitly prohibited.**
+---
