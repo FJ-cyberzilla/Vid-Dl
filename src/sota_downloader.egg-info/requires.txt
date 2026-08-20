@@ -5,3 +5,15 @@ tenacity>=8.5.0
 requests>=2.32.3
 structlog>=24.4.0
 platformdirs>=4.3.0
+
+[:sys_platform != "android"]
+cryptography>=49.0.0
+
+[full]
+cryptography>=49.0.0
+
+[mobile]
+qrcode>=7.4.2
+
+[ui]
+qrcode>=7.4.2

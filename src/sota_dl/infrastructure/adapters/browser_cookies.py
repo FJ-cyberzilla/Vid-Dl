@@ -5,7 +5,7 @@ Supports Chrome, Firefox, Brave, Edge, Opera on desktop and mobile.
 """
 
 from collections.abc import Callable, Iterator
-from typing import TypedDict, Any, TypeVar, cast
+from typing import Any, TypeVar, cast
 from pathlib import Path
 from enum import Enum
 from datetime import datetime, timedelta, timezone
@@ -18,19 +18,28 @@ import platform
 import secrets
 import shutil
 import sqlite3
+import configparser
 import subprocess  # nosec
 import tempfile
 import threading
 import time
 from functools import wraps
 from urllib.parse import urlparse
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.exceptions import InvalidKey
 import base64
-from sota_dl.config.settings import COOKIES_PATH
+from sota_dl.infrastructure.adapters.cookies.types import (
+    CookieMetadata,
+    ExtractionResult,
+    CookieError,
+    CookieExtractionError,
+    CookieSecurityError,
+    CookieDatabaseLockedError,
+)
+from sota_dl.infrastructure.adapters.cookies.factory import CookieExtractionFactory
 
 T = TypeVar("T")
 
@@ -42,68 +51,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class CookieMetadata(TypedDict):
-    expires: datetime | None
-    secure: bool
-    domain: str
-    path: str
-    http_only: bool
-    same_site: str | None
-
-
-@dataclass
-class CookieEntry:
-    name: str
-    value: str
-    domain: str
-    path: str = "/"
-    expires: datetime | None = None
-    secure: bool = False
-    http_only: bool = False
-    same_site: str | None = None
-
-
-@dataclass
-class ExtractionResult:
-    success: bool
-    cookies: dict[str, str]
-    metadata: dict[str, CookieMetadata] = field(default_factory=dict)
-    source: str = ""
-    error: str | None = None
-    extraction_time_ms: float = 0.0
-
-
-class CookieError(Exception):
-    """Base exception for cookie-related errors."""
-
-    pass
-
-
-class CookieExtractionError(CookieError):
-    """Failed to extract cookies."""
-
-    def __init__(self, message: str, browser: str = "", domain: str = ""):
-        self.browser = browser
-        self.domain = domain
-        super().__init__(f"Cookie extraction failed for {browser}/{domain}: {message}")
-
-
-class CookieSecurityError(CookieError):
-    """Security-related cookie errors."""
-
-    pass
-
-
-class CookieDatabaseLockedError(CookieError):
-    """Browser database is locked (browser may be running)."""
-
-    pass
-
-
-class CookiePermissionError(CookieError):
-    """Insufficient permissions to access browser data."""
-
-    pass
+# BrowserType and CookieMetadata/Entry/Result are now imported from .cookies.types
 
 
 class BrowserType(Enum):
@@ -115,6 +63,12 @@ class BrowserType(Enum):
     CHROME_MOBILE = "chrome_mobile"
     BRAVE_MOBILE = "brave_mobile"
     FIREFOX_MOBILE = "firefox_mobile"
+
+
+class CookiePermissionError(CookieError):
+    """Insufficient permissions to access browser data."""
+
+    pass
 
 
 @dataclass
@@ -367,36 +321,46 @@ class BrowserCookieAdapter:
     ) -> None:
         """Setup encryption with Fernet symmetric encryption."""
         try:
-            if encryption_key:
-                key = encryption_key
-                if len(key) != 44:
-                    key = base64.urlsafe_b64encode(key[:32])
-            else:
-                env_key = os.getenv("COOKIE_ENCRYPTION_KEY")
-                if env_key:
-                    key = env_key.encode()
-                else:
-                    if encryption_salt is None:
-                        encryption_salt = self._get_or_create_salt()
-
-                    machine_id = self._get_machine_id()
-                    key_material = (
-                        f"{machine_id}{platform.node()}{os.getpid()}"
-                    ).encode()
-
-                    kdf = PBKDF2HMAC(
-                        algorithm=hashes.SHA256(),
-                        length=32,
-                        salt=encryption_salt,
-                        iterations=480_000,
-                    )
-                    key = base64.urlsafe_b64encode(kdf.derive(key_material))
-
+            key = self._resolve_encryption_key(encryption_key, encryption_salt)
             self.fernet = Fernet(key)
             logger.debug("Encryption setup completed successfully")
 
         except Exception as e:
             raise CookieSecurityError(f"Failed to setup encryption: {e}") from e
+
+    def _resolve_encryption_key(
+        self, encryption_key: bytes | None, encryption_salt: bytes | None
+    ) -> bytes:
+        """Resolves encryption key from arguments, env, or derivation."""
+        if encryption_key:
+            return self._normalize_key(encryption_key)
+
+        env_key = os.getenv("COOKIE_ENCRYPTION_KEY")
+        if env_key:
+            return env_key.encode()
+
+        return self._derive_key(encryption_salt)
+
+    def _normalize_key(self, key: bytes) -> bytes:
+        if len(key) != 44:
+            return base64.urlsafe_b64encode(key[:32])
+        return key
+
+    def _derive_key(self, salt: bytes | None) -> bytes:
+        """Derives a secure encryption key."""
+        if salt is None:
+            salt = self._get_or_create_salt()
+
+        machine_id = self._get_machine_id()
+        key_material = f"{machine_id}{platform.node()}{os.getpid()}".encode()
+
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=480_000,
+        )
+        return base64.urlsafe_b64encode(kdf.derive(key_material))
 
     def _get_or_create_salt(self) -> bytes:
         """Get existing salt or create a new one securely."""
@@ -419,26 +383,34 @@ class BrowserCookieAdapter:
     def _get_machine_id(self) -> str:
         """Get a unique machine identifier."""
         try:
-            if platform.system() == "Linux":
-                machine_id = Path("/etc/machine-id").read_text().strip()
-            elif platform.system() == "Darwin":
-                result = subprocess.run(  # nosec
-                    ["/usr/sbin/ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
-                    capture_output=True,
-                    text=True,
-                )
-                machine_id = platform.node()
-                for line in result.stdout.split("\n"):
-                    if "IOPlatformUUID" in line:
-                        machine_id = line.split('"')[-2]
-                        break
-            else:
-                machine_id = platform.node()
-
-            return hashlib.sha256(machine_id.encode()).hexdigest()
-
+            return self._calculate_machine_id()
         except Exception:
             return hashlib.sha256(platform.node().encode()).hexdigest()
+
+    def _calculate_machine_id(self) -> str:
+        """Determines machine id based on OS."""
+        if platform.system() == "Linux":
+            return self._get_linux_machine_id()
+        if platform.system() == "Darwin":
+            return self._get_darwin_machine_id()
+        return hashlib.sha256(platform.node().encode()).hexdigest()
+
+    def _get_linux_machine_id(self) -> str:
+        machine_id = Path("/etc/machine-id").read_text().strip()
+        return hashlib.sha256(machine_id.encode()).hexdigest()
+
+    def _get_darwin_machine_id(self) -> str:
+        result = subprocess.run(  # nosec
+            ["/usr/sbin/ioreg", "-rd1", "-c", "IOPlatformExpertDevice"],
+            capture_output=True,
+            text=True,
+        )
+        machine_id = platform.node()
+        for line in result.stdout.split("\n"):
+            if "IOPlatformUUID" in line:
+                machine_id = line.split('"')[-2]
+                break
+        return hashlib.sha256(machine_id.encode()).hexdigest()
 
     @contextmanager
     def _sqlite_connection(
@@ -539,32 +511,19 @@ class BrowserCookieAdapter:
         }
         return browser_map.get(browser.lower())
 
-    def _extract_cookies_multisource(
+    def _is_android(self) -> bool:
+        """Check if running on Android/Termux."""
+        return platform.system() == "Linux" and "termux" in os.environ.get("PREFIX", "")
+
+    def _try_netscape_strategy(self, domain: str) -> ExtractionResult:
+        """Try Netscape import strategy."""
+        strategy = CookieExtractionFactory.get_strategy("netscape")
+        return strategy.extract(domain)
+
+    def _try_remaining_strategies(
         self, domain: str, browser_type: BrowserType
     ) -> ExtractionResult:
-        """Try multiple sources in order of preference, with Android fallback."""
-
-        # Check if running on Android/Termux
-        is_android = platform.system() == "Linux" and "termux" in os.environ.get(
-            "PREFIX", ""
-        )
-
-        # New: Always try netscape import first
-        result = self._extract_from_netscape_format(domain)
-        if result.success:
-            return result
-
-        if is_android:
-            logger.info(
-                "Android environment detected. Bypassing "
-                "browser-based cookie extraction."
-            )
-            return ExtractionResult(
-                success=False,
-                cookies={},
-                error="Android detected, use OAuth2/cookies.txt",
-            )
-
+        """Try browser_cookie3, database, and cache."""
         if browser_cookie3 is not None:
             result = self._extract_with_browser_cookie3(domain, browser_type)
             if result.success:
@@ -579,10 +538,29 @@ class BrowserCookieAdapter:
             return result
 
         return ExtractionResult(
-            success=False,
-            cookies={},
-            error="All extraction methods failed",
+            success=False, cookies={}, error="All extraction methods failed"
         )
+
+    def _extract_cookies_multisource(
+        self, domain: str, browser_type: BrowserType
+    ) -> ExtractionResult:
+        """Try multiple sources in order of preference, with Android fallback."""
+        result = self._try_netscape_strategy(domain)
+        if result.success:
+            return result
+
+        if self._is_android():
+            logger.info(
+                "Android environment detected. "
+                "Bypassing browser-based cookie extraction."
+            )
+            return ExtractionResult(
+                success=False,
+                cookies={},
+                error="Android detected, use OAuth2/cookies.txt",
+            )
+
+        return self._try_remaining_strategies(domain, browser_type)
 
     def load_cookies_from_file(self, cookie_file: Path) -> dict[str, str]:
         """Extract all cookies from a Netscape/Mozilla formatted cookies.txt file."""
@@ -590,61 +568,64 @@ class BrowserCookieAdapter:
             return {}
 
         try:
-            cookies: dict[str, str] = {}
-            with open(cookie_file, encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-
-                    parts = line.split("\t")
-                    if len(parts) < 7:
-                        continue
-
-                    cookies[parts[5]] = parts[6]
-            return cookies
+            return self._parse_cookie_file(cookie_file)
         except Exception as e:
             logger.error(f"cookies.txt read failed: {e}")
             return {}
 
-    def _extract_from_netscape_format(self, domain: str) -> ExtractionResult:
-        """
-        Extract cookies from a Netscape/Mozilla formatted cookies.txt file
-        filtered by domain.
-        """
-        if not COOKIES_PATH.exists():
-            return ExtractionResult(
-                success=False, cookies={}, error="cookies.txt not found"
-            )
+    def _parse_cookie_file(self, cookie_file: Path) -> dict[str, str]:
+        cookies: dict[str, str] = {}
+        with open(cookie_file, encoding="utf-8") as f:
+            for line in f:
+                parsed = self._parse_cookie_line(line.strip())
+                if parsed:
+                    cookies[parsed[0]] = parsed[1]
+        return cookies
 
-        try:
-            cookies_dict: dict[str, str] = {}
-            with open(COOKIES_PATH, encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
+    def _parse_cookie_line(self, line: str) -> tuple[str, str] | None:
+        if not line or line.startswith("#"):
+            return None
+        parts = line.split("\t")
+        if len(parts) < 7:
+            return None
+        return (parts[5], parts[6])
 
-                    parts = line.split("\t")
-                    if len(parts) < 7:
-                        continue
+    def _get_browser_cookie3_func(
+        self, browser_type: BrowserType
+    ) -> Callable[..., Any] | None:
+        if browser_cookie3 is None:
+            return None
+        return {
+            BrowserType.CHROME: browser_cookie3.chrome,
+            BrowserType.FIREFOX: browser_cookie3.firefox,
+            BrowserType.BRAVE: browser_cookie3.brave,
+            BrowserType.EDGE: browser_cookie3.edge,
+            BrowserType.OPERA: browser_cookie3.opera,
+        }.get(browser_type)
 
-                    cookie_domain = parts[0]
-                    if domain in cookie_domain or cookie_domain in domain:
-                        cookies_dict[parts[5]] = parts[6]
+    def _get_cj(self, cookie_func: Callable[..., Any], domain: str) -> Any:
+        """Helper to get cookie jar."""
+        if hasattr(cookie_func, "domain_name"):
+            return cookie_func(domain_name=domain)
+        return cookie_func()
 
-            if cookies_dict:
-                return ExtractionResult(
-                    success=True, cookies=cookies_dict, source="cookies_txt"
-                )
+    def _cj_to_cookies(self, cj: Any) -> dict[str, str]:
+        """Helper to convert cookie jar to dict."""
+        return {
+            c.name: c.value for c in cj if hasattr(c, "name") and hasattr(c, "value")
+        }
 
-            return ExtractionResult(
-                success=False, cookies={}, error="No matching cookies in cookies.txt"
-            )
-        except Exception as e:
-            return ExtractionResult(
-                success=False, cookies={}, error=f"cookies.txt read failed: {e}"
-            )
+    def _extract_using_func(
+        self, cookie_func: Callable[..., Any], domain: str
+    ) -> ExtractionResult:
+        """Helper to extract cookies using a provided browser_cookie3 function."""
+        cj = self._get_cj(cookie_func, domain)
+        if not cj:
+            return ExtractionResult(success=False, cookies={}, error="No cookies")
+
+        return ExtractionResult(
+            success=True, cookies=self._cj_to_cookies(cj), source="browser_cookie3"
+        )
 
     def _extract_with_browser_cookie3(
         self, domain: str, browser_type: BrowserType
@@ -655,59 +636,48 @@ class BrowserCookieAdapter:
                 success=False, cookies={}, error="browser_cookie3 not available"
             )
 
-        # Map browser type to browser_cookie3 function
-        browser_map = {
-            BrowserType.CHROME: browser_cookie3.chrome,
-            BrowserType.FIREFOX: browser_cookie3.firefox,
-            BrowserType.BRAVE: browser_cookie3.brave,
-            BrowserType.EDGE: browser_cookie3.edge,
-            BrowserType.OPERA: browser_cookie3.opera,
-        }
-
-        cookie_func = browser_map.get(browser_type)
+        cookie_func = self._get_browser_cookie3_func(browser_type)
         if not cookie_func:
             return ExtractionResult(
                 success=False, cookies={}, error=f"Unsupported: {browser_type}"
             )
 
         try:
-            # Attempt to extract cookies
-            cj = (
-                cookie_func(domain_name=domain)
-                if hasattr(cookie_func, "domain_name")
-                else cookie_func()
-            )
-
-            if not cj:
-                return ExtractionResult(success=False, cookies={}, error="No cookies")
-
-            cookies = {
-                c.name: c.value
-                for c in cj
-                if hasattr(c, "name") and hasattr(c, "value")
-            }
-
-            return ExtractionResult(
-                success=True, cookies=cookies, source="browser_cookie3"
-            )
-
+            return self._extract_using_func(cookie_func, domain)
         except Exception as e:
             return ExtractionResult(
                 success=False, cookies={}, error=f"browser_cookie3 failed: {e}"
+            )
+
+    def _get_system_key(self) -> str:
+        """Determines the system key based on the current platform."""
+        system = platform.system().lower()
+        if system == "windows":
+            return "windows"
+        if system == "darwin":
+            return "darwin"
+        return "linux"
+
+    def _run_extraction(
+        self, cookie_path: Path, domain: str, browser_type: BrowserType
+    ) -> ExtractionResult:
+        """Runs the appropriate extraction based on browser type."""
+        try:
+            if browser_type == BrowserType.FIREFOX:
+                return self._extract_firefox_cookies(cookie_path, domain)
+            return self._extract_chrome_cookies(cookie_path, domain)
+        except CookieDatabaseLockedError:
+            raise
+        except Exception as e:
+            return ExtractionResult(
+                success=False, cookies={}, error=f"Database extraction failed: {e}"
             )
 
     def _extract_from_database(
         self, domain: str, browser_type: BrowserType
     ) -> ExtractionResult:
         """Extract cookies directly from browser database."""
-        system = platform.system().lower()
-        system_key = (
-            "windows"
-            if system == "windows"
-            else "darwin"
-            if system == "darwin"
-            else "linux"
-        )
+        system_key = self._get_system_key()
 
         browser_config = self.BROWSER_CONFIGS.get(browser_type)
         if not browser_config:
@@ -723,19 +693,32 @@ class BrowserCookieAdapter:
                 error=f"Cookie database not found at {cookie_path}",
             )
 
-        try:
-            if browser_type == BrowserType.FIREFOX:
-                return self._extract_firefox_cookies(cookie_path, domain)
+        return self._run_extraction(cookie_path, domain, browser_type)
 
-            return self._extract_chrome_cookies(cookie_path, domain)
+    def _process_chrome_row(
+        self,
+        row: sqlite3.Row,
+        strategy: Any,
+        cookies: dict[str, str],
+        metadata: dict[str, CookieMetadata],
+    ) -> None:
+        """Process a single chrome cookie row."""
+        name = row["name"]
+        value = row["value"]
+        if not value and row["encrypted_value"]:
+            value = strategy.decrypt(row["encrypted_value"])
+            if not value:
+                return
 
-        except CookieDatabaseLockedError as e:
-            logger.warning(f"Browser database locked: {e}")
-            raise
-        except Exception as e:
-            return ExtractionResult(
-                success=False, cookies={}, error=f"Database extraction failed: {e}"
-            )
+        cookies[name] = value
+        metadata[name] = CookieMetadata(
+            expires=self._chrome_time_to_datetime(row["expires_utc"]),
+            secure=bool(row["secure"]),
+            domain=row["host_key"],
+            path=row["path"] or "/",
+            http_only=bool(row["httponly"]),
+            same_site=row["samesite"],
+        )
 
     def _extract_chrome_cookies(
         self, cookie_path: Path, domain: str
@@ -761,8 +744,6 @@ class BrowserCookieAdapter:
 
                 cookies: dict[str, str] = {}
                 metadata: dict[str, CookieMetadata] = {}
-
-                # Determine strategy
                 strategy = (
                     DPAPIDecryptionStrategy()
                     if platform.system() == "Windows"
@@ -770,22 +751,7 @@ class BrowserCookieAdapter:
                 )
 
                 for row in cursor:
-                    name = row["name"]
-                    value = row["value"]
-                    if not value and row["encrypted_value"]:
-                        value = strategy.decrypt(row["encrypted_value"])
-                        if not value:
-                            continue
-
-                    cookies[name] = value
-                    metadata[name] = CookieMetadata(
-                        expires=self._chrome_time_to_datetime(row["expires_utc"]),
-                        secure=bool(row["secure"]),
-                        domain=row["host_key"],
-                        path=row["path"] or "/",
-                        http_only=bool(row["httponly"]),
-                        same_site=row["samesite"],
-                    )
+                    self._process_chrome_row(row, strategy, cookies, metadata)
 
                 with self._metadata_lock:
                     self._cookie_metadata.update(metadata)
@@ -858,60 +824,7 @@ class BrowserCookieAdapter:
                     error=f"Firefox cookie database not found: {cookie_db}",
                 )
 
-            with (
-                self._temp_file_copy(cookie_db) as temp_path,
-                self._sqlite_connection(temp_path) as conn,
-            ):
-                cursor = conn.cursor()
-
-                cursor.execute(
-                    """
-                    SELECT 
-                        name, 
-                        value, 
-                        host, 
-                        expiry, 
-                        isSecure, 
-                        isHttpOnly,
-                        path,
-                        sameSite
-                    FROM moz_cookies
-                    WHERE host LIKE ?
-                    """,
-                    (f"%{domain}%",),
-                )
-
-                cookies: dict[str, str] = {}
-                metadata: dict[str, CookieMetadata] = {}
-
-                for row in cursor:
-                    name = row["name"]
-                    cookies[name] = row["value"]
-
-                    expiry = row["expiry"]
-                    metadata[name] = CookieMetadata(
-                        expires=(
-                            datetime.fromtimestamp(expiry, tz=timezone.utc)
-                            if expiry
-                            else None
-                        ),
-                        secure=bool(row["isSecure"]),
-                        domain=row["host"],
-                        path=row["path"] or "/",
-                        http_only=bool(row["isHttpOnly"]),
-                        same_site=(str(row["sameSite"]) if row["sameSite"] else None),
-                    )
-
-                with self._metadata_lock:
-                    self._cookie_metadata.update(metadata)
-
-                return ExtractionResult(
-                    success=True,
-                    cookies=cookies,
-                    metadata=metadata,
-                    source="firefox_db",
-                    extraction_time_ms=0.0,
-                )
+            return self._perform_firefox_extraction(cookie_db, domain)
 
         except CookieDatabaseLockedError:
             raise
@@ -919,6 +832,70 @@ class BrowserCookieAdapter:
             return ExtractionResult(
                 success=False, cookies={}, error=f"Firefox extraction failed: {e}"
             )
+
+    def _perform_firefox_extraction(
+        self, cookie_db: Path, domain: str
+    ) -> ExtractionResult:
+        with (
+            self._temp_file_copy(cookie_db) as temp_path,
+            self._sqlite_connection(temp_path) as conn,
+        ):
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                SELECT 
+                    name, 
+                    value, 
+                    host, 
+                    expiry, 
+                    isSecure, 
+                    isHttpOnly,
+                    path,
+                    sameSite
+                FROM moz_cookies
+                WHERE host LIKE ?
+                """,
+                (f"%{domain}%",),
+            )
+
+            cookies: dict[str, str] = {}
+            metadata: dict[str, CookieMetadata] = {}
+
+            for row in cursor:
+                self._process_firefox_row(row, cookies, metadata)
+
+            with self._metadata_lock:
+                self._cookie_metadata.update(metadata)
+
+            return ExtractionResult(
+                success=True,
+                cookies=cookies,
+                metadata=metadata,
+                source="firefox_db",
+                extraction_time_ms=0.0,
+            )
+
+    def _process_firefox_row(
+        self,
+        row: sqlite3.Row,
+        cookies: dict[str, str],
+        metadata: dict[str, CookieMetadata],
+    ) -> None:
+        """Process a single row from Firefox cookies DB."""
+        name = row["name"]
+        cookies[name] = row["value"]
+
+        expiry = row["expiry"]
+        metadata[name] = CookieMetadata(
+            expires=(
+                datetime.fromtimestamp(expiry, tz=timezone.utc) if expiry else None
+            ),
+            secure=bool(row["isSecure"]),
+            domain=row["host"],
+            path=row["path"] or "/",
+            http_only=bool(row["isHttpOnly"]),
+            same_site=(str(row["sameSite"]) if row["sameSite"] else None),
+        )
 
     def _get_firefox_default_profile(self, profiles_path: Path) -> Path | None:
         """Get the default Firefox profile using the new resolver."""
@@ -929,9 +906,21 @@ class BrowserCookieAdapter:
 
         return self._parse_firefox_profiles_ini(profiles_path)
 
+    def _get_default_profile_path(
+        self, config: configparser.ConfigParser, profiles_path: Path
+    ) -> Path | None:
+        """Find the default profile path in config."""
+        for section in config.sections():
+            if config.getint(section, "Default", fallback=0) == 1:
+                path = config.get(section, "Path")
+                is_relative = config.getint(section, "IsRelative", fallback=1)
+                profile_path = profiles_path / path if is_relative else Path(path)
+                if profile_path.exists():
+                    return profile_path
+        return None
+
     def _parse_firefox_profiles_ini(self, profiles_path: Path) -> Path | None:
         """Helper to parse Firefox profiles.ini."""
-        import configparser
 
         profiles_ini = profiles_path / "profiles.ini"
 
@@ -942,16 +931,7 @@ class BrowserCookieAdapter:
         config = configparser.ConfigParser()
         config.read(profiles_ini)
 
-        # Look for section with Default=1
-        for section in config.sections():
-            if config.getint(section, "Default", fallback=0) == 1:
-                path = config.get(section, "Path")
-                is_relative = config.getint(section, "IsRelative", fallback=1)
-                profile_path = profiles_path / path if is_relative else Path(path)
-                if profile_path.exists():
-                    return profile_path
-
-        return None
+        return self._get_default_profile_path(config, profiles_path)
 
     def _extract_from_cache(self) -> ExtractionResult:
         """Extract cookies from encrypted cache file."""
@@ -962,54 +942,70 @@ class BrowserCookieAdapter:
                 )
 
             data = self._load_encrypted_cookies()
-            if data:
-                cookies = data.get("cookies", {})
-                metadata = data.get("metadata", {})
-
-                timestamp = data.get("timestamp")
-                if timestamp:
-                    cache_time = datetime.fromisoformat(timestamp)
-                    if datetime.now(timezone.utc) - cache_time > timedelta(hours=24):
-                        logger.warning("Using stale cached cookies (>24h old)")
-
-                with self._metadata_lock:
-                    self._cookie_metadata.update(metadata)
-
+            if not data:
                 return ExtractionResult(
-                    success=True,
-                    cookies=cookies,
-                    metadata=metadata,
-                    source="encrypted_cache",
-                    extraction_time_ms=0.0,
+                    success=False, cookies={}, error="Failed to extract from cache"
                 )
+
+            return self._process_cached_data(data)
 
         except Exception as e:
             logger.error(f"Cache extraction failed: {e}")
+            return ExtractionResult(
+                success=False, cookies={}, error="Failed to extract from cache"
+            )
+
+    def _process_cached_data(self, data: dict[str, Any]) -> ExtractionResult:
+        cookies = data.get("cookies", {})
+        metadata = data.get("metadata", {})
+
+        self._check_cache_staleness(data.get("timestamp"))
+
+        with self._metadata_lock:
+            self._cookie_metadata.update(metadata)
 
         return ExtractionResult(
-            success=False, cookies={}, error="Failed to extract from cache"
+            success=True,
+            cookies=cookies,
+            metadata=metadata,
+            source="encrypted_cache",
+            extraction_time_ms=0.0,
         )
+
+    def _check_cache_staleness(self, timestamp: str | None) -> None:
+        if timestamp:
+            cache_time = datetime.fromisoformat(timestamp)
+            if datetime.now(timezone.utc) - cache_time > timedelta(hours=24):
+                logger.warning("Using stale cached cookies (>24h old)")
+
+    def _is_cookie_valid(
+        self,
+        name: str,
+        value: str,
+        domain: str,
+        domain_only: bool,
+        metadata: dict[str, CookieMetadata],
+    ) -> bool:
+        """Helper to validate a single cookie."""
+        from sota_dl.core.cookie_utils import CookieValidator
+
+        cookie_meta = cast(CookieMetadata, metadata.get(name, {}))
+        if self.validate_expiry or domain_only:
+            return CookieValidator.is_valid(cookie_meta, domain if domain_only else "")
+        return True
 
     def _filter_valid_cookies(
         self, cookies: dict[str, str], domain: str, domain_only: bool
     ) -> dict[str, str]:
         """Filter cookies by domain and expiry using CookieValidator."""
-        from sota_dl.core.cookie_utils import CookieValidator
-
         filtered: dict[str, str] = {}
 
         with self._metadata_lock:
             metadata = self._cookie_metadata.copy()
 
         for name, value in cookies.items():
-            cookie_meta = cast(CookieMetadata, metadata.get(name, {}))
-
-            if (self.validate_expiry or domain_only) and not CookieValidator.is_valid(
-                cookie_meta, domain if domain_only else ""
-            ):
-                continue
-
-            filtered[name] = value
+            if self._is_cookie_valid(name, value, domain, domain_only, metadata):
+                filtered[name] = value
 
         return filtered
 
@@ -1030,43 +1026,44 @@ class BrowserCookieAdapter:
         """Load and decrypt cookies from file."""
         with self._file_lock:
             try:
-                if not self.cookie_file.exists():
-                    return None
-
-                encrypted = self.cookie_file.read_bytes()
-                if not encrypted:
-                    return None
-
-                if self.use_encryption:
-                    try:
-                        decrypted = self.fernet.decrypt(encrypted)
-                    except InvalidToken as e:
-                        raise CookieSecurityError(
-                            "Failed to decrypt cookies - invalid token. "
-                            "Key may have changed or file is corrupted."
-                        ) from e
-                    except InvalidKey as e:
-                        raise CookieSecurityError(
-                            "Failed to decrypt cookies - invalid key"
-                        ) from e
-
-                    data = json.loads(decrypted.decode("utf-8"))
-                else:
-                    data = json.loads(encrypted.decode("utf-8"))
-
-                if not isinstance(data, dict):
-                    raise ValueError("Invalid cookie data format")
-
-                if "version" not in data:
-                    logger.warning("Loading legacy cookie format")
-
-                return data
-
-            except CookieSecurityError:
-                raise
-            except Exception as e:
-                logger.error(f"Failed to load encrypted cookies: {e}")
+                return self._parse_and_validate_cookies()
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(f"Failed to load cookies: {e}")
                 return None
+
+    def _parse_and_validate_cookies(self) -> dict[str, Any] | None:
+        if not self.cookie_file.exists():
+            return None
+
+        encrypted = self.cookie_file.read_bytes()
+        if not encrypted:
+            return None
+
+        decrypted = self._decrypt_cookie_data(encrypted)
+        data = json.loads(decrypted.decode("utf-8"))
+
+        if not isinstance(data, dict):
+            raise ValueError("Invalid cookie data format")
+
+        if "version" not in data:
+            logger.warning("Loading legacy cookie format")
+
+        return data
+
+    def _decrypt_cookie_data(self, data: bytes) -> bytes:
+        """Decrypts cookie data if encryption is enabled."""
+        if not self.use_encryption:
+            return data
+
+        try:
+            return self.fernet.decrypt(data)
+        except InvalidToken as e:
+            raise CookieSecurityError(
+                "Failed to decrypt cookies - invalid token. "
+                "Key may have changed or file is corrupted."
+            ) from e
+        except InvalidKey as e:
+            raise CookieSecurityError("Failed to decrypt cookies - invalid key") from e
 
     def save_cookies_to_file(self, cookies: dict[str, str]) -> bool:
         """Save cookies to encrypted file with thread safety."""

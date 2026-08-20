@@ -1,6 +1,7 @@
 """Core protocols and interface definitions for the SOTA project."""
 
 from typing import Protocol, Any
+from pathlib import Path
 from collections.abc import Callable
 from typing import TypeAlias
 from sota_dl.core.models import (
@@ -104,3 +105,38 @@ class MetadataCacheProtocol(Protocol):
 
     async def clear(self) -> None:
         """Clears all cached entries."""
+
+
+class ConfigurationProtocol(Protocol):
+    """Protocol for application configuration."""
+
+    COOKIES_PATH: Path
+    ENV_OVERRIDE: Path | None
+    OAUTH_CLIENT_ID: str
+    OAUTH_CLIENT_SECRET: str
+    ACCESS_TOKEN: str | None
+    REFRESH_TOKEN: str | None
+    TIMEOUT: int
+    DEBUG: bool
+
+    def _is_writable(self, path: Path) -> bool: ...
+
+
+class EventBusProtocol(Protocol):
+    """Protocol for the event bus system."""
+
+    async def publish(self, event: Any) -> None:
+        """Publishes an event to all subscribers."""
+
+    def subscribe(self, event_type: type, handler: Callable[[Any], Any]) -> None:
+        """Subscribes a handler to an event type."""
+
+
+class RepositoryProtocol(Protocol):
+    """Protocol for persistence repositories."""
+
+    def load_all(self) -> list[Any]:
+        """Loads all items from the repository."""
+
+    def save_item(self, item: Any) -> None:
+        """Saves a single item to the repository."""

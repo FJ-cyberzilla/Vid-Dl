@@ -1,13 +1,17 @@
 """Settings management UI."""
 
+from rich.panel import Panel
 from rich.prompt import Prompt
+
 from sota_dl.config import settings
-from sota_dl.ui.colors import THEME
-from sota_dl.ui.banners import print_error, print_success
 from sota_dl.core.config_service import ConfigurationService
+from sota_dl.infrastructure.adapters.cookies.factory import get_cookie_adapter
+from sota_dl.infrastructure.errors import BrowserNotSupportedError
+from sota_dl.ui.banners import console, print_error, print_success
+from sota_dl.ui.colors import THEME
 import sota_dl.ui.menu_renderer as menu_renderer
 
-_config_service = ConfigurationService()
+_config_service = ConfigurationService(settings)
 
 
 def update_cookies() -> None:
@@ -32,11 +36,29 @@ def update_download_path() -> None:
 
 def _handle_cookie_extraction() -> None:
     """Handle browser cookie extraction."""
-    success, message = _config_service.extract_browser_cookies()
-    if success:
-        print_success(message)
-    else:
-        print_error(message)
+    browser = Prompt.ask(
+        f"[{THEME}]Enter browser name (chrome, firefox, brave, netscape)[/]"
+    )
+    try:
+        get_cookie_adapter(browser)
+        success, message = _config_service.extract_browser_cookies(browser)
+        if success:
+            print_success(message)
+        else:
+            print_error(message)
+    except BrowserNotSupportedError as e:
+        err_msg = f"[bold yellow]Browser '{e.browser_name}' not supported.[/bold yellow]\n\n"
+        console.print(
+            Panel(
+                f"{err_msg}"
+                "[white]Fallback options available:[/white]\n"
+                "  • Provide [bold green]cookies.txt[/bold green]\n"
+                "  • Use [bold green]OAuth login[/bold green]\n"
+                "  • Continue [bold green]anonymously[/bold green]",
+                title="[bold yellow]Browser Notice[/bold yellow]",
+                border_style="yellow",
+            )
+        )
 
 
 def update_timeout() -> None:

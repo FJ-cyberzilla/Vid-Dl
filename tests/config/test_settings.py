@@ -24,7 +24,7 @@ def test_is_writable_failure() -> None:
 
 
 @patch("sota_dl.config.settings._is_writable")
-@patch("sota_dl.config.settings.ENV_OVERRIDE", None)
+@patch("sota_dl.config.settings.ENV_OVERRIDE_PATH", None)
 @patch("sota_dl.config.settings.ANDROID_GALLERY_DIR", Path("/fake/android"))
 @patch("sota_dl.config.settings.TERMUX_FALLBACK", Path("/fake/termux"))
 @patch("sota_dl.config.settings.LOCAL_FALLBACK", Path("./downloads"))

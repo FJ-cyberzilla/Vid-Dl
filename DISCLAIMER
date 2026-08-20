@@ -1,0 +1,18 @@
+# Legal Disclaimer & Operational Notice
+
+## 1. Terms of Service & Copyright Compliance
+**SOTA Vid-Dl** is designed exclusively as an open-source technical interface and media orchestrator intended for personal archival, academic, educational, and interoperability research purposes. 
+
+* **User Responsibility:** Users assume full legal responsibility for how this utility is deployed. You must comply with local copyright laws, intellectual property rights, and the respective Terms of Service (ToS) of any third-party media hosting service accessed via this application.
+* **Prohibited Actions:** Distribution, commercial exploitation, public broadcasting, or circumvention of digital rights management (DRM) for protected or paywalled content without prior written authorization from the copyright holder is strictly prohibited.
+
+## 2. Technical Limitations & DRM Policies
+* **No DRM Circumvention:** SOTA Vid-Dl does **not** provide mechanisms to bypass, decrypt, or break Content Scrambling Systems (CSS), Digital Rights Management (DRM) locks (such as Widevine, PlayReady, FairPlay), or encrypted access tokens. 
+* **Third-Party Adapters:** Integrations with underlying engines (such as `yt-dlp`, `aria2c`, and `ffmpeg`) rely entirely on the capabilities provided by those upstream libraries.
+
+## 3. Telemetry & Security Notice
+* **Local Processing:** Network extraction, authentication token processing (cookies/OAuth), and session caching occur entirely on the client environment (e.g., Termux/Android device local storage).
+* **Zero Telemetry Collection:** SOTA Vid-Dl does not harvest, transmit, or centralize remote analytics, user search queries, credentials, or downloaded content logs.
+
+## 4. Limitation of Liability
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS, MAINTAINERS (FJ-CYBERZILLA / FJ™ CYBERTRONIC SYSTEMS), OR CONTRIBUTORS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM THE USE OR MISUSE OF THIS SOFTWARE.

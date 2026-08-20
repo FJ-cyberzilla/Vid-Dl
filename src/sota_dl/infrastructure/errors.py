@@ -82,3 +82,11 @@ class ExtractionError(InfrastructureError):
 
     Common details: *url*, *reason*.
     """
+
+
+class BrowserNotSupportedError(Exception):
+    """Raised when the requested browser is not installed or unsupported."""
+
+    def __init__(self, browser_name: str) -> None:
+        self.browser_name = browser_name
+        super().__init__(f"Browser '{browser_name}' is not supported or not installed.")

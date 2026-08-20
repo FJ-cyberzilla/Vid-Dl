@@ -1,0 +1,36 @@
+SOTA Vid-Dl v2.0.0
+Copyright (c) 2026 FJ-Cyberzilla • FJ™ Cybertronic Systems. All Rights Reserved.
+
+This product includes software developed by FJ™ Cybertronic Systems and 
+incorporates architectural paradigms based on open-source standards.
+
+--------------------------------------------------------------------------------
+Third-Party Dependencies & Executable Adapters
+--------------------------------------------------------------------------------
+SOTA Vid-Dl acts as an orchestration wrapper and interface for several 
+third-party libraries and binaries. The individual licenses for these dependencies 
+govern their usage:
+
+1. yt-dlp / youtube-dl
+   - Purpose: Media metadata extraction & protocol handling
+   - License: Unlicense / Dedicated to the Public Domain
+
+2. FFmpeg
+   - Purpose: Audio/Video demuxing, remuxing, and stream processing
+   - License: LGPL v2.1+ / GPL v2+
+
+3. aria2c
+   - Purpose: Multi-connection download acceleration adapter
+   - License: GNU General Public License v2.0 (GPLv2)
+
+4. Pydantic
+   - Purpose: Data validation & settings management via Python models
+   - License: MIT License
+
+5. Tenacity & Structlog
+   - Purpose: Exponential retries, resilient networking, and structured telemetry
+   - License: Apache License 2.0 / MIT License
+
+6. Ruff & Mypy
+   - Purpose: Development formatting, static analysis, and type checking
+   - License: MIT License

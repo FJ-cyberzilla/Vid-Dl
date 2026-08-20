@@ -19,50 +19,72 @@ def _get_downloader_factory() -> Any:
 def handle_results(results: list[DownloadResult], output_path: Path) -> None:
     """Display a summary of download results."""
     total = len(results)
-    successful = sum(1 for r in results if r.status.value == "completed")
-    failed = total - successful
+    successful = _count_successful(results)
+    
+    _print_summary_badge(successful, total)
+    console.print(f"Files saved to {output_path}")
+
+
+def _count_successful(results: list[DownloadResult]) -> int:
+    """Counts successful download results."""
+    return sum(1 for r in results if r.status.value == "completed")
+
+
+def _print_summary_badge(successful: int, total: int) -> None:
+    """Prints a success or partial failure badge."""
     if successful == total:
         print_success(f"All {total} downloads completed successfully!")
-    else:
-        console.print(f"[yellow]{successful} succeeded, {failed} failed.[/]")
-    console.print(f"Files saved to {output_path}")
+        return
+
+    failed = total - successful
+    console.print(f"[yellow]{successful} succeeded, {failed} failed.[/]")
 
 
 def execute_download(choice: str, target: str, output_path: Path) -> None:
     """Execute download process."""
+    options = _prepare_options(choice, output_path)
+    service = _get_downloader_factory()(event_bus=EventBus())
+
+    try:
+        _run_download_service(service, target, options, output_path)
+    except KeyboardInterrupt:
+        _handle_cancel(service)
+    except (OSError, ValueError, AttributeError) as e:
+        _handle_error(e)
+
+
+def _prepare_options(choice: str, output_path: Path) -> DownloadOptions:
+    """Prepares DownloadOptions based on user choice."""
     is_audio = choice == "2"
-    quality = get_quality_choice(is_audio)
-
-    # Check for cookies file
-    cookie_file = COOKIES_PATH if COOKIES_PATH.exists() else None
-
-    download_options = DownloadOptions(
-        quality=quality,
+    return DownloadOptions(
+        quality=get_quality_choice(is_audio),
         format="mp3" if is_audio else None,
         output_dir=output_path,
         overwrite=False,
         retries=3,
         timeout=30.0,
-        cookiefile=cookie_file,
+        cookiefile=COOKIES_PATH if COOKIES_PATH.exists() else None,
     )
 
-    event_bus = EventBus()
-    create_manager = _get_downloader_factory()
-    service = create_manager(event_bus=event_bus)
 
-    try:
-        console.print("\n")
-        results = service.process_target(target, options=download_options)
-        handle_results(results, output_path)
-        input("\nPress Enter to continue...")
+def _run_download_service(
+    service: Any, target: str, options: DownloadOptions, output_path: Path
+) -> None:
+    """Runs the download service and handles results."""
+    console.print("\n")
+    results = service.process_target(target, options=options)
+    handle_results(results, output_path)
+    input("\nPress Enter to continue...")
 
-    except KeyboardInterrupt:
-        service.cancel()
-        console.print(
-            f"\n[{MUTED}]Operation cancelled by user. Returning to menu...[/]"
-        )
-        input("\nPress Enter to continue...")
 
-    except (OSError, ValueError, AttributeError) as e:
-        print_error(str(e))
-        input("\nPress Enter to continue...")
+def _handle_cancel(service: Any) -> None:
+    """Handles download cancellation."""
+    service.cancel()
+    console.print(f"\n[{MUTED}]Operation cancelled by user. Returning to menu...[/]")
+    input("\nPress Enter to continue...")
+
+
+def _handle_error(e: Exception) -> None:
+    """Handles download errors."""
+    print_error(str(e))
+    input("\nPress Enter to continue...")

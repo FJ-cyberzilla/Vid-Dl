@@ -3,7 +3,7 @@
 import os
 import shutil
 import logging
-import subprocess  # nosec
+import subprocess
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -15,9 +15,13 @@ LOCAL_FALLBACK = Path("./downloads").absolute()
 
 # ---- Environment override ----
 _ENV_OVERRIDE = os.getenv("SOTA_DOWNLOAD_DIR")
-ENV_OVERRIDE = Path(_ENV_OVERRIDE).expanduser().absolute() if _ENV_OVERRIDE else None
+if _ENV_OVERRIDE:
+    ENV_OVERRIDE_PATH: Path | None = Path(_ENV_OVERRIDE).expanduser().absolute()
+else:
+    ENV_OVERRIDE_PATH = None
 
 # ---- Cache for writability checks ----
+
 _WRITABLE_CACHE: dict[Path, bool] = {}
 
 # ---- OAuth Credentials ----
@@ -50,6 +54,81 @@ def _is_writable(path: Path) -> bool:
         return False
 
 
+class Settings:
+    """Wrapper for global application configuration."""
+
+    @property
+    def COOKIES_PATH(self) -> Path:
+        return COOKIES_PATH
+
+    @COOKIES_PATH.setter
+    def COOKIES_PATH(self, value: Path) -> None:
+        global COOKIES_PATH
+        COOKIES_PATH = value
+
+    @property
+    def ENV_OVERRIDE(self) -> Path | None:
+        return ENV_OVERRIDE_PATH
+
+    @ENV_OVERRIDE.setter
+    def ENV_OVERRIDE(self, value: Path | None) -> None:
+        global ENV_OVERRIDE_PATH
+        ENV_OVERRIDE_PATH = value
+
+    @property
+    def OAUTH_CLIENT_ID(self) -> str:
+        return OAUTH_CLIENT_ID
+
+    @property
+    def OAUTH_CLIENT_SECRET(self) -> str:
+        return OAUTH_CLIENT_SECRET
+
+    @property
+    def ACCESS_TOKEN(self) -> str | None:
+        return ACCESS_TOKEN
+
+    @ACCESS_TOKEN.setter
+    def ACCESS_TOKEN(self, value: str | None) -> None:
+        global ACCESS_TOKEN
+        ACCESS_TOKEN = value
+
+    @property
+    def REFRESH_TOKEN(self) -> str | None:
+        return REFRESH_TOKEN
+
+    @REFRESH_TOKEN.setter
+    def REFRESH_TOKEN(self, value: str | None) -> None:
+        global REFRESH_TOKEN
+        REFRESH_TOKEN = value
+
+    @property
+    def TIMEOUT(self) -> int:
+        return TIMEOUT
+
+    @TIMEOUT.setter
+    def TIMEOUT(self, value: int) -> None:
+        global TIMEOUT
+        TIMEOUT = value
+
+    @property
+    def DEBUG(self) -> bool:
+        return DEBUG
+
+    @DEBUG.setter
+    def DEBUG(self, value: bool) -> None:
+        global DEBUG
+        DEBUG = value
+
+    def _is_writable(self, path: Path) -> bool:
+        return _is_writable(path)
+
+    def get_download_path(self) -> Path:
+        return get_download_path()
+
+
+settings = Settings()
+
+
 def _find_writable_path(candidates: list[tuple[Path, str]]) -> Path | None:
     """Find the first writable path from a list of candidates."""
     for path, label in candidates:
@@ -71,8 +150,8 @@ def get_download_path() -> Path:
     Returns an absolute Path; ensures the directory exists.
     """
     candidates = []
-    if ENV_OVERRIDE:
-        candidates.append((ENV_OVERRIDE, "env override"))
+    if ENV_OVERRIDE_PATH:
+        candidates.append((ENV_OVERRIDE_PATH, "env override"))
     candidates.append((ANDROID_GALLERY_DIR, "Android Gallery"))
     candidates.append((TERMUX_FALLBACK, "Termux fallback"))
 

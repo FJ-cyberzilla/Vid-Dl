@@ -1,4 +1,5 @@
 import asyncio
+import requests
 import structlog
 
 from sota_dl.config.constants import TOKEN_ENDPOINT, DEVICE_CODE_URL
@@ -73,21 +74,33 @@ class OAuth2DeviceFlowService:
             await asyncio.sleep(5)  # Poll interval
             try:
                 response = await self._network.post_async(TOKEN_ENDPOINT, data=payload)
-                if response.status_code == 200:
-                    data = response.json()
-                    logger.info("Successfully obtained tokens")
-                    # Store tokens using config_service
-                    self._config.store_oauth_tokens(
-                        data["access_token"], data["refresh_token"]
-                    )
+                should_continue = self._handle_poll_response(response)
+                if not should_continue:
                     break
-                elif response.status_code == 400:
-                    error = response.json().get("error")
-                    if error == "authorization_pending":
-                        continue
-                    else:
-                        logger.error("OAuth2 error", error=error)
-                        break
             except Exception as e:
                 logger.error("Polling error", error=str(e))
                 break
+
+    def _handle_poll_response(self, response: requests.Response) -> bool:
+        """Process response from polling.
+
+        Return True to continue polling, False to stop.
+
+        Args:
+            response: Response object from token endpoint.
+
+        Returns:
+            bool: True if polling should continue, False otherwise.
+        """
+        if response.status_code == 200:
+            data = response.json()
+            logger.info("Successfully obtained tokens")
+            # Store tokens using config_service
+            self._config.store_oauth_tokens(data["access_token"], data["refresh_token"])
+            return False
+        if response.status_code == 400:
+            error = response.json().get("error")
+            if error == "authorization_pending":
+                return True
+            logger.error("OAuth2 error", error=error)
+        return False

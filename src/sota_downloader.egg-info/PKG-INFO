@@ -3,6 +3,8 @@ Name: sota-downloader
 Version: 2.0.0
 Summary: A modular, terminal-based media extraction tool optimized for Android/Termux.
 Requires-Python: >=3.10
+License-File: LICENSE
+License-File: NOTICE
 Requires-Dist: yt-dlp>=2026.07.04
 Requires-Dist: rich>=13.7.1
 Requires-Dist: pydantic>=2.8.2
@@ -10,3 +12,11 @@ Requires-Dist: tenacity>=8.5.0
 Requires-Dist: requests>=2.32.3
 Requires-Dist: structlog>=24.4.0
 Requires-Dist: platformdirs>=4.3.0
+Requires-Dist: cryptography>=49.0.0; sys_platform != "android"
+Provides-Extra: mobile
+Requires-Dist: qrcode>=7.4.2; extra == "mobile"
+Provides-Extra: ui
+Requires-Dist: qrcode>=7.4.2; extra == "ui"
+Provides-Extra: full
+Requires-Dist: cryptography>=49.0.0; extra == "full"
+Dynamic: license-file

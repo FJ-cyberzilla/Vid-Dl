@@ -88,24 +88,40 @@ class YtDlpEngine:
         extra_opts: dict[str, Any] | None = None,
     ) -> Path:
         """Download a single media resource."""
+        self._validate_download_inputs(url, output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        path_container: dict[str, Path | None] = {"final_path": None}
+        self._run_ydl(url, output_dir, progress_callback, extra_opts, path_container)
+        
+        return self._resolve_final_path(path_container)
+
+    def _validate_download_inputs(self, url: str, output_dir: Path) -> None:
+        """Validates inputs for the download method."""
         if not url or not output_dir:
             raise ValueError("Invalid URL or output directory")
 
-        output_dir.mkdir(parents=True, exist_ok=True)
-        path_container: dict[str, Path | None] = {"final_path": None}
+    def _run_ydl(
+        self,
+        url: str,
+        output_dir: Path,
+        progress_callback: Callable[[dict[str, Any]], Any] | None,
+        extra_opts: dict[str, Any] | None,
+        path_container: dict[str, Path | None],
+    ) -> None:
+        """Executes the yt-dlp download process."""
+        def hook(d: ProgressDict) -> None:
+            self._progress_hook(d, progress_callback, path_container)
 
-        opts = self._build_ydl_opts(
-            output_dir,
-            extra_opts,
-            lambda d: self._progress_hook(d, progress_callback, path_container),
-        )
-
+        opts = self._build_ydl_opts(output_dir, extra_opts, hook)
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 ydl.download([url])
         except DownloadError as exc:
             self._handle_download_error(exc)
 
+    def _resolve_final_path(self, path_container: dict[str, Path | None]) -> Path:
+        """Resolves the final path from the path container."""
         final_path = path_container["final_path"]
         if final_path is None or not final_path.exists():
             raise YtDlpError(

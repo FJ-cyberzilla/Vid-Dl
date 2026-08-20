@@ -35,7 +35,7 @@ def test_get_cookies_for_url_dynamic_failure_fallback_success(
 
     # Patch COOKIES_PATH to point to our temp file
     monkeypatch.setattr(
-        "sota_dl.infrastructure.adapters.browser_cookies.COOKIES_PATH", cookie_file
+        "sota_dl.infrastructure.adapters.cookies.netscape.COOKIES_PATH", cookie_file
     )
 
     with patch("browser_cookie3.chrome") as mock_chrome:

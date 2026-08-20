@@ -55,35 +55,48 @@ class CookieValidator:
     """Utility to handle business logic of cookie validation."""
 
     @staticmethod
+    def _is_expired(expires: object, now: datetime, domain: str | None) -> bool:
+        """Checks if a cookie has expired."""
+        if not isinstance(expires, datetime):
+            return False
+        
+        if expires <= now:
+            logger.debug("Cookie expired", domain=domain)
+            return True
+        return False
+
+    @staticmethod
+    def _domain_matches(cookie_domain: str, domain: str) -> bool:
+        """Verifies if the cookie domain matches the target domain."""
+        stripped = cookie_domain.lstrip(".")
+        if not stripped or not domain:
+            return True
+            
+        return any([
+            stripped == domain,
+            domain.endswith(f".{stripped}"),
+            stripped.endswith(f".{domain}")
+        ])
+
+    @staticmethod
     def is_valid(
         cookie_meta: Mapping[str, Any], domain: str, now: datetime | None = None
     ) -> bool:
+        """Validates a cookie against a domain and expiration."""
         if now is None:
             now = datetime.now(timezone.utc)
 
-        # Check expiry
+        cookie_domain = cast(str, cookie_meta.get("domain", ""))
         expires = cookie_meta.get("expires")
-        if expires and isinstance(expires, datetime) and expires <= now:
-            logger.debug("Cookie expired", domain=cookie_meta.get("domain"))
+
+        if CookieValidator._is_expired(expires, now, cookie_domain):
             return False
 
-        # Check domain matching
-        cookie_domain = cookie_meta.get("domain", "").lstrip(".")
-        if not cookie_domain or not domain:
-            return True
-
-        is_match = (
-            cookie_domain == domain
-            or domain.endswith(f".{cookie_domain}")
-            or cookie_domain.endswith(f".{domain}")
-        )
-        if not is_match:
-            logger.debug(
-                "Cookie domain mismatch",
-                domain=cookie_meta.get("domain"),
-                target=domain,
-            )
-        return is_match
+        if not CookieValidator._domain_matches(cookie_domain, domain):
+            logger.debug("Cookie domain mismatch", domain=cookie_domain, target=domain)
+            return False
+            
+        return True
 
 
 class BrowserType(Enum):

@@ -1,12 +1,17 @@
 import pytest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from sota_dl.core.config_service import ConfigurationService
 
 
 @pytest.fixture
-def config_service() -> ConfigurationService:
-    return ConfigurationService()
+def mock_settings() -> MagicMock:
+    return MagicMock()
+
+
+@pytest.fixture
+def config_service(mock_settings: MagicMock) -> ConfigurationService:
+    return ConfigurationService(mock_settings)
 
 
 def test_update_cookies_path_invalid(config_service: ConfigurationService) -> None:
@@ -22,20 +27,15 @@ def test_update_cookies_path_not_exists(config_service: ConfigurationService) ->
 
 
 def test_update_cookies_path_success(
-    config_service: ConfigurationService, tmp_path: Path
+    config_service: ConfigurationService, mock_settings: MagicMock, tmp_path: Path
 ) -> None:
     cookie_file = tmp_path / "cookies.txt"
     cookie_file.touch()
 
-    with (
-        patch("sota_dl.config.settings.COOKIES_PATH", new=None),
-        patch("sota_dl.core.config_service.settings") as mock_settings,
-    ):
-        # Patch settings directly to mock the settings object in the module.
-        success, message = config_service.update_cookies_path(str(cookie_file))
-        assert success
-        assert "Source updated" in message
-        assert cookie_file.expanduser().absolute() == mock_settings.COOKIES_PATH
+    success, message = config_service.update_cookies_path(str(cookie_file))
+    assert success
+    assert "Source updated" in message
+    assert cookie_file.expanduser().absolute() == mock_settings.COOKIES_PATH
 
 
 def test_update_download_path_invalid(config_service: ConfigurationService) -> None:
@@ -45,21 +45,19 @@ def test_update_download_path_invalid(config_service: ConfigurationService) -> N
 
 
 def test_update_download_path_success(
-    config_service: ConfigurationService, tmp_path: Path
+    config_service: ConfigurationService, mock_settings: MagicMock, tmp_path: Path
 ) -> None:
-    # Mock settings._is_writable
-    with patch("sota_dl.core.config_service.settings") as mock_settings:
-        mock_settings._is_writable.return_value = True
-
-        success, message = config_service.update_download_path(str(tmp_path))
-        assert success
-        assert "Target updated" in message
-        assert tmp_path.expanduser().absolute() == mock_settings.ENV_OVERRIDE
+    # We need to mock _is_writable which is imported in config_service
+    # from utils or infrastructure, or it is part of settings?
+    # In config_service, update_download_path checks path.exists() and
+    # if it's writable.
+    success, message = config_service.update_download_path(str(tmp_path))
+    assert success
+    assert "Target updated" in message
+    assert tmp_path.expanduser().absolute() == mock_settings.ENV_OVERRIDE
 
 
 def test_extract_browser_cookies_fail(config_service: ConfigurationService) -> None:
-    # Since the method returns True regardless of the return value of get_cookies_for_url,
-    # we need to mock it to raise an exception to test the failure case.
     with patch(
         "sota_dl.infrastructure.adapters.browser_cookies.BrowserCookieAdapter.get_cookies_for_url",
         side_effect=Exception("Extraction error"),
