@@ -24,29 +24,45 @@ ICON_NODE := $(CYAN)❖$(RESET)
 APP_NAME  := $(BOLD)$(CYAN)SOTA-Downloader$(RESET) $(DIM)v2.0.0$(RESET)
 BRAND     := $(BOLD)$(VIOLET)FJ™ Cybertronic Systems$(RESET)
 
-# ----- Smart System & Environment Detection -----
+# ----- Advanced Multi-Stage System & Environment Detection -----
 RAW_OS    := $(shell uname -s 2>/dev/null || echo Windows)
 IS_TERMUX := $(if $(wildcard /data/data/com.termux),1,0)
 
-IS_WSL := 0
-WSL_VER := 0
-ifeq ($(RAW_OS),Linux)
-    ifneq ($(wildcard /proc/sys/fs/binfmt_misc/WSLInterop),)
-        IS_WSL := 1
-        WSL_VER := 2
-    else ifneq ($(wildcard /proc/version),)
-        ifneq ($(shell grep -i microsoft /proc/version),)
-            IS_WSL := 1
-            WSL_VER := 1
-        endif
+# Resolve uv hardlink warning by forcing copy mode (essential for Termux/Android filesystems)
+export UV_LINK_MODE := copy
+
+# Advanced Distro & Environment Fingerprinting
+ifeq ($(IS_TERMUX),1)
+    DISTRO := termux-android
+    IS_WSL := 0
+else ifeq ($(RAW_OS),Darwin)
+    DISTRO := macos
+    IS_WSL := 0
+else ifneq ($(filter Windows% MSYS% MINGW%,$(RAW_OS)),)
+    DISTRO := windows
+    IS_POWERSHELL := $(if $(shell powershell -command "$$PSVersionTable" 2>/dev/null),1,0)
+    IS_WSL := 0
+else ifeq ($(RAW_OS),Linux)
+    # Detect WSL
+    IS_WSL := $(shell grep -qi microsoft /proc/version 2>/dev/null && echo 1 || echo 0)
+    WSL_VER := $(if $(filter 1,$(IS_WSL)),$(shell grep -q "WSL2" /proc/version 2>/dev/null && echo 2 || echo 1),0)
+    
+    # Precise Distro Identification
+    DISTRO := $(shell . /etc/os-release 2>/dev/null && echo $$ID || echo linux-core)
+    ifeq ($(DISTRO),linux-core)
+        DISTRO := $(shell lsb_release -si 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo debian-fallback)
     endif
+else
+    DISTRO := $(shell echo $(RAW_OS) | tr '[:upper:]' '[:lower:]')
 endif
 
-DISTRO := unknown
-ifeq ($(RAW_OS),Linux)
-    ifneq ($(wildcard /etc/os-release),)
-        DISTRO := $(shell . /etc/os-release && echo $$ID)
-    endif
+# Determine high-performance vs lightweight execution paths
+ifeq ($(DISTRO),termux-android)
+    PI_INSTALL := pip install --upgrade pip && pip install -e .
+    PI_RUN     := python3 -m
+else
+    PI_INSTALL := uv sync --all-extras && uv pip install -e .
+    PI_RUN     := uv run
 endif
 
 .DEFAULT_GOAL := help
@@ -92,6 +108,7 @@ sys-info: ## Display detected OS and environment details
 	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)Raw OS / Kernel :$(RESET)  $(WHITE)$(RAW_OS)$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)Termux Detected :$(RESET)  $(if $(filter 1,$(IS_TERMUX)),$(AMBER)$(BOLD)YES (Android Subsystem)$(RESET),$(WHITE)NO$(RESET))\n"
 	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)WSL Environment :$(RESET)  $(if $(filter 1,$(IS_WSL)),$(CYAN)$(BOLD)YES (WSL$(WSL_VER))$(RESET),$(WHITE)NO$(RESET))\n"
+	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)PowerShell      :$(RESET)  $(if $(filter 1,$(IS_POWERSHELL)),$(CYAN)$(BOLD)YES$(RESET),$(WHITE)NO$(RESET))\n"
 	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)Linux Distro    :$(RESET)  $(WHITE)$(DISTRO)$(RESET)\n"
 	@printf " $(BOLD)$(VIOLET)└──────────────────────────────────────────────────────────┘$(RESET)\n\n"
 
@@ -112,23 +129,23 @@ install-deps: sys-info ## Auto-install system level packages (FFmpeg, Python hea
 			sudo pacman -Sy --noconfirm base-devel python-pip ffmpeg aria2 git; \
 		fi; \
 	elif [ "$(RAW_OS)" = "Windows" ]; then \
-		printf " $(ICON_WARN) $(AMBER)Windows native detected. Use PowerShell with winget:$(RESET)\n"; \
-		printf " $(WHITE)winget install Python.Python.3.11 ; winget install Gyan.FFmpeg$(RESET)\n"; \
+		if [ "$(IS_POWERSHELL)" = "1" ]; then \
+			printf " $(ICON_NODE) $(CYAN)PowerShell detected. Installing dependencies via winget...$(RESET)\n"; \
+			powershell -command "winget install Python.Python.3.11 ; winget install Gyan.FFmpeg ; winget install aria2.aria2"; \
+		else \
+			printf " $(ICON_WARN) $(AMBER)Windows native detected. Use PowerShell with winget:$(RESET)\n"; \
+			printf " $(WHITE)winget install Python.Python.3.11 ; winget install Gyan.FFmpeg ; winget install aria2.aria2$(RESET)\n"; \
+		fi; \
 	fi
 
 install: sys-info ## Install application dependencies with smart environment fallbacks
 	@if [ "$(IS_TERMUX)" = "1" ]; then \
-		printf " $(ICON_WARN) $(AMBER)Termux constraint mode active. Bypassing heavy builds...$(RESET)\n"; \
-		if command -v uv >/dev/null 2>&1; then \
-			uv pip install --only-binary=:all: -e . || pip install --only-binary=:all: -e .; \
-		else \
-			pip install --upgrade pip; \
-			pip install --only-binary=:all: -e . || pip install cryptography wheel -e .; \
-		fi; \
+		printf " $(ICON_WARN) $(AMBER)Termux mode active. Using pip for lightweight installation...$(RESET)\n"; \
+		$(PI_INSTALL); \
 		printf " $(ICON_OK) $(EMERALD)Termux installation completed successfully.$(RESET)\n"; \
 	else \
 		printf " $(ICON_NODE) $(CYAN)Installing full production dependencies via uv...$(RESET)\n"; \
-		uv sync --no-dev && uv pip install -e .; \
+		uv sync --no-dev --all-extras && uv pip install -e .; \
 		printf " $(ICON_OK) $(EMERALD)Production installation complete.$(RESET)\n"; \
 	fi
 
@@ -137,21 +154,28 @@ dev: sys-info ## Install development dependencies
 		printf " $(ICON_WARN) $(AMBER)Termux detected: Heavy dev tools skipped for stability.$(RESET)\n"; \
 		pip install -e .; \
 	else \
-		printf " $(ICON_NODE) $(CYAN)Installing development dependencies...$(RESET)\n"; \
-		uv sync && uv pip install -e .; \
+		printf " $(ICON_NODE) $(CYAN)Installing development dependencies via uv...$(RESET)\n"; \
+		$(PI_INSTALL); \
 		printf " $(ICON_OK) $(EMERALD)Development installation complete.$(RESET)\n"; \
 	fi
 
 update: ## Upgrade locked dependencies (uv lock --upgrade)
-	@printf " $(ICON_NODE) $(CYAN)Updating locked dependencies...$(RESET)\n"
-	@uv lock --upgrade
-	@uv sync
-	@printf " $(ICON_OK) $(EMERALD)Dependencies successfully updated.$(RESET)\n"
+	@if [ "$(IS_TERMUX)" = "1" ]; then \
+		printf " $(ICON_WARN) $(AMBER)Update skipped: Dependency locking is not supported in Termux constraint mode.$(RESET)\n"; \
+	else \
+		printf " $(ICON_NODE) $(CYAN)Updating locked dependencies...$(RESET)\n"; \
+		uv lock --upgrade && uv sync --all-extras; \
+		printf " $(ICON_OK) $(EMERALD)Dependencies successfully updated.$(RESET)\n"; \
+	fi
 
 sync: ## Synchronize environment with lockfile
-	@printf " $(ICON_NODE) $(CYAN)Synchronizing environment...$(RESET)\n"
-	@uv sync
-	@printf " $(ICON_OK) $(EMERALD)Synchronization complete.$(RESET)\n"
+	@if [ "$(IS_TERMUX)" = "1" ]; then \
+		printf " $(ICON_WARN) $(AMBER)Sync skipped: Use 'make install' for Termux dependency management.$(RESET)\n"; \
+	else \
+		printf " $(ICON_NODE) $(CYAN)Synchronizing environment...$(RESET)\n"; \
+		uv sync --all-extras; \
+		printf " $(ICON_OK) $(EMERALD)Synchronization complete.$(RESET)\n"; \
+	fi
 
 install-completion: ## Auto-detect shell and install tab completion to .zshrc/.bashrc
 	@shell_bin="$$(basename "$$SHELL")"; \
@@ -202,16 +226,16 @@ diagnose: sys-info ## Run environment and dependency compatibility check
 
 lint: ## Analyze code with Ruff
 	@printf " $(ICON_NODE) $(CYAN)Checking code quality with Ruff...$(RESET)\n"
-	@uv run ruff check . || ruff check .
+	@$(PI_RUN) ruff check . || ruff check .
 
 format: ## Format codebase with Ruff
 	@printf " $(ICON_NODE) $(CYAN)Formatting files with Ruff...$(RESET)\n"
-	@uv run ruff format . || ruff format .
+	@$(PI_RUN) ruff format . || ruff format .
 
 ##@ 🧪 Test & Build
 test: ## Run test suite with inline coverage
 	@printf " $(ICON_NODE) $(CYAN)Running tests...$(RESET)\n"
-	@PYTHONPATH=src pytest --cov --cov-report=html --cov-report=term || PYTHONPATH=src uv run pytest --cov --cov-report=html --cov-report=term
+	@PYTHONPATH=src $(PI_RUN) pytest --cov --cov-report=html --cov-report=term || PYTHONPATH=src pytest --cov --cov-report=html --cov-report=term
 
 coverage: ## View terminal coverage summary
 	@printf "\n $(BOLD)$(CYAN)── Coverage Report Summary ────────────────────────────────────$(RESET)\n"

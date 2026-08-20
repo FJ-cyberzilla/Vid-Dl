@@ -55,8 +55,18 @@ help | Show built-in help message
 install | Install core production dependencies
 lint | Run ruff linter checks
 run | Launch the application CLI
+sys-info | Display detected OS and environment details
 test | Run the complete test suite with coverage report
 update | Update dependencies (uv lock --upgrade)
+
+### 🖥️ Smart System & Environment Detection
+SOTA Vid-Dl utilizes an advanced Makefile-based detection system to configure the environment automatically. It supports:
+- **Termux (Android):** Optimized for low-footprint installation.
+- **macOS:** Automated Homebrew dependency resolution.
+- **Linux:** Multi-distro detection (Debian, Fedora, Arch) with native package management.
+- **Windows:** Detects PowerShell capabilities to automatically install dependencies via `winget` (Python, FFmpeg, aria2).
+
+Run `make sys-info` to view the currently detected environment configuration.
 
 💡 Usage & Tips
 - Single URL: Paste any supported media link when prompted by the CLI.
