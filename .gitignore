@@ -12,9 +12,10 @@ env.bak/
 venv.bak/
 
 # Project Metadata & Build Artifacts
-sota_downloader.egg-info/
+*.egg-info/
 build/
 dist/
+*.whl
 
 # Testing, Coverage & Type Checkers
 .coverage
@@ -36,10 +37,11 @@ cookies.txt
 *.der
 client_id.bin
 data/
+*.db
 
 # Documentation & Local Config
 GEMINI.md
-# ... (rest of the file)
+# (Add other local project instruction files as needed)
 
 # yt-dlp Caches, Fragments & Temporary Downloads
 .yt-dlp/
@@ -56,6 +58,7 @@ GEMINI.md
 *.wav
 test_output/
 logs/
+*.log
 
 # OS, IDE & AI Workspace Files
 .DS_Store
@@ -64,14 +67,12 @@ Thumbs.db
 .vscode/
 .gemini/
 
-# Local Scratchpad & Temporary Scripts
-modification.txt
-test_import.py
-*.log
+# Local Scratchpad & Temporary Files
 *.tmp
-refactor.txt
-refine.txt
+*.bak
+*.swp
+*~
 
-# Infrastructure caches and cookie adapters
-src/sota_dl/infrastructure/cache/
-src/sota_dl/infrastructure/adapters/cookies/
+# Recursive Cache & Infrastructure
+**/.cache/
+
