@@ -6,6 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "sota-downloader"
 version = "2.0.0"
 description = "A modular, terminal-based media extraction tool optimized for Android/Termux."
+authors = [{name = "User", email = "user@example.com"}]
+readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
     "yt-dlp>=2026.07.04",
@@ -15,12 +18,24 @@ dependencies = [
     "requests>=2.32.3",
     "structlog>=24.4.0",
     "platformdirs>=4.3.0",
-    "cryptography>=49.0.0"
+    "cryptography>=49.0.0; sys_platform != 'android'"
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/sota-downloader"
+Issues = "https://github.com/yourusername/sota-downloader/issues"
 
 [project.optional-dependencies]
 mobile = ["qrcode>=7.4.2"]
 ui = ["qrcode>=7.4.2"]
+full = [
+    "cryptography>=49.0.0"
+]
 
 [project.scripts]
 sota = "sota_dl.main:main_menu"
@@ -50,6 +65,14 @@ strict = true
 mypy_path = "src"
 explicit_package_bases = true
 
+# Strict 'Any' checks
+disallow_any_unimported = true
+disallow_any_expr = true
+disallow_any_decorated = true
+disallow_any_explicit = true
+disallow_any_generics = true
+disallow_subtyped_by_any = true
+
 [[tool.mypy.overrides]]
 module = [
     "psutil",
@@ -60,7 +83,7 @@ module = [
     "browser_cookie3",
     "pybalt",
     "pybalt.core.exceptions",
-    "win32crypt"
-    ]
-
+    "win32crypt",
+    "requests"
+]
 ignore_missing_imports = true

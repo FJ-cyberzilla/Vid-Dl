@@ -1,0 +1,35 @@
+# ==============================================================================
+# SOTA Vid-Dl v2.0.0 - CODEOWNERS
+# System Owners & Component Maintainers (FJ™ Cybertronic Systems)
+# Syntax rules follow GitHub/GitLab CODEOWNERS spec
+# ==============================================================================
+
+# Global Default Owners
+* @FJ-Cyberzilla
+
+# Configuration & Infrastructure
+/config.yaml                            @FJ-Cyberzilla
+/pyproject.toml                         @FJ-Cyberzilla
+/Makefile                               @FJ-Cyberzilla
+/mypy.ini                               @FJ-Cyberzilla
+/src/sota_dl/config/                   @FJ-Cyberzilla
+
+# Core Architecture & Domain Logic
+/src/sota_dl/composition_root.py        @FJ-Cyberzilla
+/src/sota_dl/core/                      @FJ-Cyberzilla
+/src/sota_dl/core/models/               @FJ-Cyberzilla
+
+# Infrastructure Layer & Engine Adapters
+/src/sota_dl/infrastructure/adapters/   @FJ-Cyberzilla
+/src/sota_dl/infrastructure/cache/      @FJ-Cyberzilla
+/src/sota_dl/infrastructure/extensions/ @FJ-Cyberzilla
+
+# User Interface Layer (CLI & Renders)
+/src/sota_dl/ui/                        @FJ-Cyberzilla
+
+# Documentation & Assets
+/docs/                                  @FJ-Cyberzilla
+/README.md                              @FJ-Cyberzilla
+
+# Test Suites
+/tests/                                 @FJ-Cyberzilla
