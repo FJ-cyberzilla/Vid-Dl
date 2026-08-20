@@ -105,11 +105,11 @@ menu: ## Launch interactive command selector (fzf / select fallback)
 ##@ 📦 Environment & Setup
 sys-info: ## Display detected OS and environment details
 	@printf "\n $(BOLD)$(VIOLET)┌── System Environment Detection ──────────────────────────┐$(RESET)\n"
-	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)Raw OS / Kernel :$(RESET)  $(WHITE)$(RAW_OS)$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)Raw OS / Kernel :$(RESET)  $(VIOLET)$(RAW_OS)$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)Termux Detected :$(RESET)  $(if $(filter 1,$(IS_TERMUX)),$(AMBER)$(BOLD)YES (Android Subsystem)$(RESET),$(WHITE)NO$(RESET))\n"
 	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)WSL Environment :$(RESET)  $(if $(filter 1,$(IS_WSL)),$(CYAN)$(BOLD)YES (WSL$(WSL_VER))$(RESET),$(WHITE)NO$(RESET))\n"
 	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)PowerShell      :$(RESET)  $(if $(filter 1,$(IS_POWERSHELL)),$(CYAN)$(BOLD)YES$(RESET),$(WHITE)NO$(RESET))\n"
-	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)Linux Distro    :$(RESET)  $(WHITE)$(DISTRO)$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(MAGENTA)Linux Distro    :$(RESET)  $(if $(filter termux-android,$(DISTRO)),$(AMBER),$(VIOLET))$(DISTRO)$(RESET)\n"
 	@printf " $(BOLD)$(VIOLET)└──────────────────────────────────────────────────────────┘$(RESET)\n\n"
 
 install-deps: sys-info ## Auto-install system level packages (FFmpeg, Python headers)
@@ -161,16 +161,16 @@ dev: sys-info ## Install development dependencies
 	fi
 
 update: ## Upgrade locked dependencies (uv lock --upgrade)
-	@printf " $(ICON_NODE) $(CYAN)Detected System: $(RESET)$(CYAN)$(DISTRO)$(RESET)\n"
+	@printf " $(ICON_NODE) $(CYAN)Detected System: $(RESET)$(if $(filter termux-android,$(DISTRO)),$(AMBER),$(CYAN))$(DISTRO)$(RESET)\n"
 	@if [ "$(IS_TERMUX)" = "1" ]; then \
 		printf " $(ICON_NODE) $(CYAN)Updating all lightweight dependencies for Termux...$(RESET)\n"; \
-		if ! pip install --upgrade -q yt-dlp rich pydantic tenacity requests structlog platformdirs 2> /tmp/pip_err.log; then \
+		if ! pip install --upgrade -q yt-dlp rich pydantic tenacity requests structlog platformdirs 2> pip_err.log; then \
 			printf " $(ICON_FAIL) $(ROSE)Error updating dependencies:$(RESET)\n"; \
-			cat /tmp/pip_err.log | sed 's/^/  $(ROSE)• /'; \
+			cat pip_err.log | sed 's/^/  $(ROSE)• /'; \
 		else \
 			printf " $(ICON_OK) $(EMERALD)Termux dependencies updated.$(RESET)\n"; \
 		fi; \
-		rm -f /tmp/pip_err.log; \
+		rm -f pip_err.log; \
 	else \
 		printf " $(ICON_NODE) $(CYAN)Updating locked dependencies...$(RESET)\n"; \
 		uv lock --upgrade && uv sync --all-extras; \
