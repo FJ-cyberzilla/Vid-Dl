@@ -30,6 +30,7 @@
 # Documentation & Assets
 /docs/                                  @FJ-Cyberzilla
 /README.md                              @FJ-Cyberzilla
+/.github/SECURITY.md                    @FJ-Cyberzilla
 
 # Test Suites
 /tests/                                 @FJ-Cyberzilla

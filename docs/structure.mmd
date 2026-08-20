@@ -1,0 +1,21 @@
+graph TD
+    %% Define Styles
+    classDef cli fill:#00ffff,stroke:#333,stroke-width:2px,color:#000;
+    classDef core fill:#ffcc00,stroke:#333,stroke-width:2px,color:#000;
+    classDef inf fill:#99ccff,stroke:#333,stroke-width:2px,color:#000;
+    classDef ui fill:#ff99cc,stroke:#333,stroke-width:2px,color:#000;
+
+    subgraph "Application"
+        CLI[CLI Layer: main.py]:::cli
+        ORCH[Orchestrator: download_controller.py]:::core
+        SVC[Service Layer: download_service.py]:::core
+        ADPT[Adapters: yt-dlp, ffmpeg, aria2c]:::inf
+        CACHE[Cache Layer: infrastructure/cache.py]:::inf
+        UI[UI Layer: menus.py, progress_bars.py]:::ui
+    end
+
+    CLI --> ORCH
+    ORCH --> SVC
+    SVC --> ADPT
+    SVC --> CACHE
+    ORCH --> UI

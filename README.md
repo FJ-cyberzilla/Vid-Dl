@@ -75,3 +75,6 @@ Run `make sys-info` to view the currently detected environment configuration.
 - Auto-Fallback: The system automatically falls back to the best available quality stream.
 
 --- SOTA Vid-Dl v2.0.0 | FJ™ Cyberzilla ---
+
+📚 Documentation
+For detailed usage, configuration, and architecture details, refer to the [User Guide](docs/userguide.md).
