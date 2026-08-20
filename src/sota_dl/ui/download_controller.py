@@ -20,7 +20,7 @@ def handle_results(results: list[DownloadResult], output_path: Path) -> None:
     """Display a summary of download results."""
     total = len(results)
     successful = _count_successful(results)
-    
+
     _print_summary_badge(successful, total)
     console.print(f"Files saved to {output_path}")
 

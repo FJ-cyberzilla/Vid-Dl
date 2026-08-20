@@ -1,14 +1,17 @@
 from pydantic import BaseModel
 from typing import TypedDict
 
+
 # Define a more specific type for format entries if possible
 class MediaFormat(TypedDict):
     """Represents a single media format."""
+
     format_id: str
     ext: str
     resolution: str
     filesize: int | None
     url: str
+
 
 class VideoMetadata(BaseModel):
     """Represents the metadata of a media item."""

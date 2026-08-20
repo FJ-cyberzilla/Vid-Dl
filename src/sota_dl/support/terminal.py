@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 def clear_screen() -> None:
     """
-    Clear the terminal screen and move the cursor to the home position.
-...
+        Clear the terminal screen and move the cursor to the home position.
+    ...
     """
     # If stdout is not a terminal, do nothing (e.g., when output is piped to a file)
     if not sys.stdout.isatty():

@@ -162,8 +162,7 @@ class MediaExtractor:
         except Exception as exc:
             logger.error(f"Innertube fallback extraction failed: {exc}")
             raise ExtractionError(
-                f"All extraction methods failed for {url}. "
-                f"Fallback error: {exc}",
+                f"All extraction methods failed for {url}. Fallback error: {exc}",
                 url=url,
                 reason=str(exc),
             ) from exc

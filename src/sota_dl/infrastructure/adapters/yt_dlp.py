@@ -90,10 +90,10 @@ class YtDlpEngine:
         """Download a single media resource."""
         self._validate_download_inputs(url, output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         path_container: dict[str, Path | None] = {"final_path": None}
         self._run_ydl(url, output_dir, progress_callback, extra_opts, path_container)
-        
+
         return self._resolve_final_path(path_container)
 
     def _validate_download_inputs(self, url: str, output_dir: Path) -> None:
@@ -110,6 +110,7 @@ class YtDlpEngine:
         path_container: dict[str, Path | None],
     ) -> None:
         """Executes the yt-dlp download process."""
+
         def hook(d: ProgressDict) -> None:
             self._progress_hook(d, progress_callback, path_container)
 

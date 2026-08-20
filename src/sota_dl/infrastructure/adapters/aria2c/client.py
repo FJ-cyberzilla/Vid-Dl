@@ -172,9 +172,7 @@ class Aria2cClient:
     ) -> None:
         """Manages download retry loop."""
         timeout = (
-            options.timeout
-            if options.timeout is not None
-            else self.default_timeout
+            options.timeout if options.timeout is not None else self.default_timeout
         )
 
         for attempt in range(1, options.retries + 1):

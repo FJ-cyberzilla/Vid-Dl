@@ -56,9 +56,9 @@ class PriorityDownloadQueue:
     """
 
     def __init__(
-        self, 
-        event_bus: EventBusProtocol | None = None, 
-        repository: RepositoryProtocol | None = None
+        self,
+        event_bus: EventBusProtocol | None = None,
+        repository: RepositoryProtocol | None = None,
     ) -> None:
         self._queue: asyncio.PriorityQueue[PriorityItem] = asyncio.PriorityQueue()
         self._items: dict[str, DownloadQueueItem] = {}
@@ -71,7 +71,7 @@ class PriorityDownloadQueue:
         """Loads items from the repository if provided."""
         if not self._repository:
             return
-            
+
         for item in self._repository.load_all():
             self._items[item.item_id] = item
             self._requeue_if_pending(item)
@@ -80,7 +80,7 @@ class PriorityDownloadQueue:
         """Helper to requeue a pending item."""
         if item.state != QueueItemState.PENDING:
             return
-            
+
         priority_entry = PriorityItem(
             priority=item.priority,
             timestamp=item.created_at,
@@ -228,6 +228,7 @@ class PriorityDownloadQueue:
             return
 
         from sota_dl.core.event_bus import DownloadStateChangedEvent
+
         event = DownloadStateChangedEvent(
             download_id=item_id, state=state_name, error_message=message
         )

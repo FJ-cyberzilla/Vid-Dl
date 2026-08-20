@@ -23,6 +23,8 @@ def validate_url(url: str) -> bool:
 def get_download_path() -> Path:
     """Wrapper for config.settings.get_download_path."""
     return get_config_download_path()
+
+
 ...
 
 
@@ -44,10 +46,10 @@ def _is_valid_url(target: str) -> bool:
     parsed = urlparse(target)
     if not _has_valid_scheme(parsed.scheme):
         return False
-        
+
     if parsed.scheme == "file":
         return _is_valid_file_url(parsed.path)
-        
+
     return bool(parsed.netloc)
 
 
