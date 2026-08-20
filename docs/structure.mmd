@@ -9,6 +9,7 @@ graph TD
         CLI[CLI Layer: main.py]:::cli
         ORCH[Orchestrator: download_controller.py]:::core
         SVC[Service Layer: download_service.py]:::core
+        TYPES[Core Types: types.py]:::core
         ADPT[Adapters: yt-dlp, ffmpeg, aria2c]:::inf
         CACHE[Cache Layer: infrastructure/cache.py]:::inf
         UI[UI Layer: menus.py, progress_bars.py]:::ui
@@ -19,3 +20,4 @@ graph TD
     SVC --> ADPT
     SVC --> CACHE
     ORCH --> UI
+    SVC -.-> TYPES

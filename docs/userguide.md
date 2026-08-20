@@ -48,3 +48,10 @@ graph TD
 
 ## 6. Configuration
 Modify `config.yaml` to adjust behaviors like download locations, parallelism, and authentication preferences.
+
+## 7. Typing & Type Safety
+- **`py.typed`**: Marker file indicating the package provides inline type annotations for static analysis tools (e.g., `mypy`).
+- **`types.py`**: Contains actual Python definitions (Enums, TypeAliases) for domain modeling.
+
+## 8. Security
+- Please refer to [`.github/SECURITY.md`](../.github/SECURITY.md) for vulnerability reporting guidelines.
