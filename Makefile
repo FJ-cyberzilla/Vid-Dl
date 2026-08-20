@@ -21,8 +21,8 @@ ICON_FAIL := $(ROSE)✖$(RESET)
 ICON_WARN := $(AMBER)⚡$(RESET)
 ICON_NODE := $(CYAN)❖$(RESET)
 
-APP_NAME  := $(BOLD)$(CYAN)SOTA Vid-Dl$(RESET) $(DIM)v2.0.0$(RESET)
-BRAND     := $(BOLD)$(VIOLET)FJ™ Cyberzilla Systems$(RESET)
+APP_NAME  := $(BOLD)$(CYAN)SOTA-Downloader$(RESET) $(DIM)v2.0.0$(RESET)
+BRAND     := $(BOLD)$(VIOLET)FJ™ Cybertronic Systems$(RESET)
 
 # ----- Smart System & Environment Detection -----
 RAW_OS    := $(shell uname -s 2>/dev/null || echo Windows)
