@@ -1,7 +1,4 @@
-import os
-
-# Define content for LICENSE (AGPLv3 is industry-standard for open-source media utilities to enforce copyleft reciprocity)
-agpl_text = """GNU AFFERO GENERAL PUBLIC LICENSE
+GNU AFFERO GENERAL PUBLIC LICENSE
 Version 3, 19 November 2007
 
 Copyright (C) 2026 FJ-Cyberzilla • FJ™ Cybertronic Systems <https://github.com/FJ-cyberzilla/sota-downloader>
@@ -608,10 +605,3 @@ Program, unless a warranty or assumption of liability accompanies a
 copy of the Program in return for a fee.
 
                      END OF TERMS AND CONDITIONS
-"""
-
-with open("LICENSE", "w", encoding="utf-8") as f:
-    f.write(agpl_text)
-
-print("LICENSE file generated successfully.")
-
