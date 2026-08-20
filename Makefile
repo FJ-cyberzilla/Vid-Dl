@@ -139,7 +139,17 @@ install-deps: sys-info ## Auto-install system level packages (FFmpeg, Python hea
 	fi
 
 install: sys-info ## Install application dependencies with smart environment fallbacks
-	@printf " $(ICON_NODE) $(CYAN)Detected System: $(RESET)$(CYAN)$(DISTRO)$(RESET)\n"
+	@if [ "$(RAW_OS)" = "Darwin" ]; then \
+		printf "\n $(ICON_FAIL) $(ROSE)CRITICAL POLICY VIOLATION:$(RESET)\n"; \
+		printf " $(ROSE)Apple/macOS systems are strictly unsupported by our policy.$(RESET)\n\n"; \
+		exit 1; \
+	fi
+	@if command -v safari >/dev/null 2>&1; then \
+		printf "\n $(ICON_FAIL) $(ROSE)CRITICAL POLICY VIOLATION:$(RESET)\n"; \
+		printf " $(ROSE)Safari browser is strictly unsupported by our policy.$(RESET)\n\n"; \
+		exit 1; \
+	fi
+	@printf " $(ICON_NODE) $(CYAN)Detected System: $(RESET)$(if $(filter termux-android,$(DISTRO)),$(AMBER),$(CYAN))$(DISTRO)$(RESET)\n"
 	@if [ "$(IS_TERMUX)" = "1" ]; then \
 		printf " $(ICON_WARN) $(AMBER)Termux mode active. Using pip for lightweight installation...$(RESET)\n"; \
 		$(PI_INSTALL); \
