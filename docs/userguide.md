@@ -5,6 +5,15 @@ Welcome to the SOTA Downloader. This guide provides comprehensive information on
 ## 1. Introduction
 The SOTA Downloader is a modular, terminal-based media extraction tool optimized for Android/Termux environments, utilizing robust async I/O.
 
+## 1.1 Supported Platforms & Policy
+SOTA Vid-Dl is designed for optimal performance on mobile-first environments (specifically Termux on Android) and general Linux environments.
+
+**Strict Unsupported Platforms & Browsers:**
+- **Apple/macOS:** This project does not support Apple operating systems or devices.
+- **Safari Browser:** We do not support the Safari browser.
+
+Attempting installation on these platforms will trigger a critical policy violation warning and terminate the installation process.
+
 ## 2. Getting Started
 ### Prerequisites
 - Python 3.13+

@@ -76,6 +76,15 @@ Run `make sys-info` to view the currently detected environment configuration.
 
 --- SOTA Vid-Dl v2.0.0 | FJ™ Cyberzilla ---
 
+## ⚠️ Supported Platforms & Policy
+SOTA Vid-Dl is designed for optimal performance on mobile-first environments (specifically Termux on Android) and general Linux environments.
+
+**Strict Unsupported Platforms & Browsers:**
+- **Apple/macOS:** This project does not support Apple operating systems or devices.
+- **Safari Browser:** We do not support the Safari browser.
+
+Attempting installation on these platforms will trigger a critical policy violation warning and terminate the installation process.
+
 📚 Documentation
 For detailed usage, configuration, and architecture details, refer to the [User Guide](docs/userguide.md).
 

@@ -18,8 +18,17 @@ Android.
 adapters).
 ● Resilient Networking: Built-in exponential backoff retries handling transient mobile
 network drops.
-● DRM & Stream Support: Extensible binding layer for specialized stream decryption and
-tools.
+● DRM & Stream Support: Extensible binding layer for specialized stream decryption and tools.
+
+### ⚠️ Supported Platforms & Policy
+SOTA Vid-Dl is designed for optimal performance on mobile-first environments (specifically Termux on Android) and general Linux environments.
+
+**Strict Unsupported Platforms & Browsers:**
+- **Apple/macOS:** This project does not support Apple operating systems or devices.
+- **Safari Browser:** We do not support the Safari browser.
+
+Attempting installation on these platforms will trigger a critical policy violation warning and terminate the installation process.
+
 🏛️ 2. Architectural Philosophy
 Sota Vid-Dl's architecture guarantees high reliability and ease of extendability:
 +---------------------------------------------------------------------
