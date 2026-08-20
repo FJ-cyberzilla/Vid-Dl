@@ -36,7 +36,7 @@ SOTA Vid-Dl rejects the "bloatware" approach common in media download utilities.
 - sota_dl/infrastructure/: Adapters (yt-dlp, aria2c, ffmpeg), telemetry, system monitoring.
 - sota_dl/ui/: Interactive CLI rendering.
 - sota_dl/config/: Application settings and environment management.
-- sota_dl/utils/: Helper functions and utilities.
+- sota_dl.support/: Helper functions and utilities.
 
 🛠️ Makefile Commands
 SOTA Vid-Dl includes a streamlined Makefile for developer operations:

@@ -15,7 +15,7 @@ from sota_dl.core.models.video_metadata import VideoMetadata
 from sota_dl.core.protocols import MetadataCacheProtocol
 from sota_dl.infrastructure.adapters.innertube import AndroidInnertubeAdapter
 from sota_dl.core.event_bus import EventBus, ExtractorFallbackEvent
-from sota_dl.utils.retry import RetryConfig, async_retry
+from sota_dl.support.retry import RetryConfig, async_retry
 from sota_dl.infrastructure.errors import ExtractionError
 
 __all__ = ["MediaExtractor", "ExtractorConfig", "ExtractionError"]
@@ -85,7 +85,9 @@ class MediaExtractor:
 
         return await self._perform_extraction_flow(url)
 
-    async def _try_get_cached(self, url: str, force_refresh: bool) -> VideoMetadata | None:
+    async def _try_get_cached(
+        self, url: str, force_refresh: bool
+    ) -> VideoMetadata | None:
         """Tries to get metadata from cache if not forcing refresh."""
         if force_refresh:
             return None
@@ -225,7 +227,9 @@ class MediaExtractor:
             opts.update(self.config.extra_options)
         return opts
 
-    def _execute_ytdlp_extraction(self, url: str, opts: dict[str, Any]) -> dict[str, Any]:
+    def _execute_ytdlp_extraction(
+        self, url: str, opts: dict[str, Any]
+    ) -> dict[str, Any]:
         """Executes the raw yt-dlp extraction."""
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(url, download=False)

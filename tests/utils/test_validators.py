@@ -1,5 +1,5 @@
 from pathlib import Path
-from sota_dl.utils.validators import is_valid_input, validate_options
+from sota_dl.support.validators import is_valid_input, validate_options
 
 
 def test_is_valid_input_http(tmp_path: Path) -> None:

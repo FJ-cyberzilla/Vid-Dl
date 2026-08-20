@@ -80,7 +80,7 @@ to prevent silent crashes deep in execution pipelines. 📂 3. Directory & File 
 Below is the complete project layout and function mapping:
 ├── Makefile # Developer CLI macro command runner
 ├── README.md # Quick project overview
-├── composition_root.py # Dependency injection container &
+├── container.py # Dependency injection container &
 bootstrap setup
 ├── config/
 │ ├── __init__.py
@@ -139,7 +139,7 @@ builders
 speed meters
 ├── utils/
 │ ├── __init__.py
-│ ├── helpers.py # Time, byte formatting, and
+│ ├── terminal.py # Screen clearing and terminal formatting
 sanitization utilities
 │ └── validators.py # URL verification and regex path
 sanitizers

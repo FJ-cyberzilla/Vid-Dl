@@ -5,7 +5,7 @@ graph TD
     B --> B_CORE[core/]
     B --> B_INFRA[infrastructure/]
     B --> B_UI[ui/]
-    B --> B_UTIL[utils/]
+    B --> B_SUPP[support/]
     B --> B_MAIN[main.py]
 
     B_CORE --> B_CORE_MOD[models/]
@@ -18,7 +18,7 @@ graph TD
     F --> F_CORE[core/]
     F --> F_INFRA[infrastructure/]
     F --> F_UI[ui/]
-    F --> F_UTIL[utils/]
+    F --> F_SUPP[support/]
     F --> F_CONF[config/]
     F --> F_INT[integration/]
     

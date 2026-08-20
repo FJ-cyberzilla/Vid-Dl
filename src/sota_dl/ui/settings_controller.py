@@ -47,7 +47,9 @@ def _handle_cookie_extraction() -> None:
         else:
             print_error(message)
     except BrowserNotSupportedError as e:
-        err_msg = f"[bold yellow]Browser '{e.browser_name}' not supported.[/bold yellow]\n\n"
+        err_msg = (
+            f"[bold yellow]Browser '{e.browser_name}' not supported.[/bold yellow]\n\n"
+        )
         console.print(
             Panel(
                 f"{err_msg}"

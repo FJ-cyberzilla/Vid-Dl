@@ -724,7 +724,7 @@ class BrowserCookieAdapter:
         self, cookie_path: Path, domain: str
     ) -> ExtractionResult:
         """Extract cookies from Chrome-based browser using DecryptionStrategy."""
-        from sota_dl.core.cookie_utils import (
+        from sota_dl.infrastructure.adapters.cookies import (
             DPAPIDecryptionStrategy,
             PassthroughDecryptionStrategy,
         )
@@ -987,7 +987,7 @@ class BrowserCookieAdapter:
         metadata: dict[str, CookieMetadata],
     ) -> bool:
         """Helper to validate a single cookie."""
-        from sota_dl.core.cookie_utils import CookieValidator
+        from sota_dl.infrastructure.adapters.cookies import CookieValidator
 
         cookie_meta = cast(CookieMetadata, metadata.get(name, {}))
         if self.validate_expiry or domain_only:

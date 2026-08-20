@@ -8,7 +8,8 @@ import asyncio
 from dataclasses import dataclass, field
 from enum import Enum, auto
 import time
-from typing import Any
+
+from sota_dl.core.protocols import EventBusProtocol, RepositoryProtocol
 
 
 class QueueItemState(Enum):
@@ -47,8 +48,6 @@ class DownloadQueueItem:
     created_at: float = field(default_factory=time.time)
     metadata: dict[str, str] = field(default_factory=dict)
 
-
-from sota_dl.core.protocols import EventBusProtocol, RepositoryProtocol
 
 class PriorityDownloadQueue:
     """

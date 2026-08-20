@@ -1,7 +1,7 @@
 """Tests for async retry decorator."""
 
 import pytest
-from sota_dl.utils.retry import async_retry, RetryConfig
+from sota_dl.support.retry import async_retry, RetryConfig
 
 
 @pytest.mark.asyncio

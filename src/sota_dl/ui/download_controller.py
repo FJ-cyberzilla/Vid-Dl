@@ -11,7 +11,7 @@ from sota_dl.core.models import DownloadOptions, DownloadResult
 
 # Factory to break circularity
 def _get_downloader_factory() -> Any:
-    from sota_dl.composition_root import create_sota_manager
+    from sota_dl.container import create_sota_manager
 
     return create_sota_manager
 

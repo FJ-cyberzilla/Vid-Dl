@@ -15,7 +15,7 @@
 /src/sota_dl/config/                   @FJ-Cyberzilla
 
 # Core Architecture & Domain Logic
-/src/sota_dl/composition_root.py        @FJ-Cyberzilla
+/src/sota_dl/container.py        @FJ-Cyberzilla
 /src/sota_dl/core/                      @FJ-Cyberzilla
 /src/sota_dl/core/models/               @FJ-Cyberzilla
 

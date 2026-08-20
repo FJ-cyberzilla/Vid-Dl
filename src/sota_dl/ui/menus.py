@@ -7,11 +7,11 @@ from rich.prompt import Prompt
 
 from sota_dl.config.settings import check_ffmpeg, get_download_path
 from sota_dl.ui.colors import ERROR, THEME
-from sota_dl.utils.validators import is_valid_input
+from sota_dl.support.validators import is_valid_input
 from sota_dl.ui.banners import render_main_banner, print_error, console
 import sota_dl.ui.menu_renderer as menu_renderer
-import sota_dl.ui.settings_manager as settings_manager
-import sota_dl.ui.download_handler as download_handler
+import sota_dl.ui.settings_controller as settings_controller
+import sota_dl.ui.download_controller as download_controller
 
 
 def _process_exit() -> None:
@@ -30,7 +30,7 @@ def _process_download(choice: str, output_path: Path) -> None:
         input("\nPress Enter to continue...")
         return
 
-    download_handler.execute_download(choice, target, output_path)
+    download_controller.execute_download(choice, target, output_path)
 
 
 def _process_command(choice: str, output_path: Path) -> None:
@@ -38,7 +38,7 @@ def _process_command(choice: str, output_path: Path) -> None:
     if choice == "4":
         _process_exit()
     elif choice == "3":
-        settings_manager.handle_settings()
+        settings_controller.handle_settings()
     else:
         _process_download(choice, output_path)
 

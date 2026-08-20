@@ -71,7 +71,9 @@ class Aria2cClient:
         stderr_lines = await self._read_all_stderr(proc.stderr, options)
         return "\n".join(stderr_lines)
 
-    async def _read_all_stderr(self, stderr: asyncio.StreamReader, options: Aria2cOptions) -> list[str]:
+    async def _read_all_stderr(
+        self, stderr: asyncio.StreamReader, options: Aria2cOptions
+    ) -> list[str]:
         """Reads all lines from stderr."""
         lines = []
         while True:
@@ -114,7 +116,9 @@ class Aria2cClient:
         finally:
             await self._cleanup_process(proc)
 
-    async def _start_process(self, args: list[str], cwd: Path) -> asyncio.subprocess.Process:
+    async def _start_process(
+        self, args: list[str], cwd: Path
+    ) -> asyncio.subprocess.Process:
         """Starts the aria2c process."""
         return await asyncio.create_subprocess_exec(
             *args,
@@ -124,10 +128,15 @@ class Aria2cClient:
         )
 
     async def _run_process_with_timeout(
-        self, proc: asyncio.subprocess.Process, options: Aria2cOptions, timeout: float | None
+        self,
+        proc: asyncio.subprocess.Process,
+        options: Aria2cOptions,
+        timeout: float | None,
     ) -> str:
         """Runs the process and handles timeout/reading."""
-        read_task = asyncio.create_task(self._read_stderr_and_track_progress(proc, options))
+        read_task = asyncio.create_task(
+            self._read_stderr_and_track_progress(proc, options)
+        )
         try:
             if timeout is not None:
                 await asyncio.wait_for(proc.wait(), timeout=timeout)
@@ -136,7 +145,9 @@ class Aria2cClient:
         except asyncio.TimeoutError as exc:
             proc.kill()
             await proc.wait()
-            raise Aria2cTimeoutError(f"Download timed out after {timeout} seconds.") from exc
+            raise Aria2cTimeoutError(
+                f"Download timed out after {timeout} seconds."
+            ) from exc
         return await read_task
 
     def _check_return_code(self, proc: asyncio.subprocess.Process, stderr: str) -> None:
@@ -160,7 +171,11 @@ class Aria2cClient:
         cwd: Path,
     ) -> None:
         """Manages download retry loop."""
-        timeout = options.timeout if options.timeout is not None else self.default_timeout
+        timeout = (
+            options.timeout
+            if options.timeout is not None
+            else self.default_timeout
+        )
 
         for attempt in range(1, options.retries + 1):
             if await self._attempt_download(args, options, cwd, timeout, attempt):
@@ -183,11 +198,15 @@ class Aria2cClient:
         except OSError as exc:
             return await self._handle_os_error(exc, attempt, options)
 
-    async def _handle_os_error(self, exc: OSError, attempt: int, options: Aria2cOptions) -> bool:
+    async def _handle_os_error(
+        self, exc: OSError, attempt: int, options: Aria2cOptions
+    ) -> bool:
         """Handles OSError retry logic."""
         logger.warning("Attempt %d failed: %s", attempt, exc)
         if attempt == options.retries:
-            raise Aria2cError(f"Download failed after {options.retries} attempts") from exc
+            raise Aria2cError(
+                f"Download failed after {options.retries} attempts"
+            ) from exc
         await asyncio.sleep(1.5 ** (attempt - 1))
         return False
 

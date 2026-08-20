@@ -1,12 +1,12 @@
 from typing import Any
 from unittest.mock import patch
-from sota_dl.ui.settings_manager import update_cookies, update_download_path
+from sota_dl.ui.settings_controller import update_cookies, update_download_path
 
 
-@patch("sota_dl.ui.settings_manager.Prompt.ask")
-@patch("sota_dl.ui.settings_manager.print_success")
-@patch("sota_dl.ui.settings_manager.print_error")
-@patch("sota_dl.ui.settings_manager._config_service")
+@patch("sota_dl.ui.settings_controller.Prompt.ask")
+@patch("sota_dl.ui.settings_controller.print_success")
+@patch("sota_dl.ui.settings_controller.print_error")
+@patch("sota_dl.ui.settings_controller._config_service")
 def test_update_cookies_success(
     mock_service: Any, mock_error: Any, mock_success: Any, mock_prompt: Any
 ) -> None:
@@ -23,10 +23,10 @@ def test_update_cookies_success(
     mock_error.assert_not_called()
 
 
-@patch("sota_dl.ui.settings_manager.Prompt.ask")
-@patch("sota_dl.ui.settings_manager.print_success")
-@patch("sota_dl.ui.settings_manager.print_error")
-@patch("sota_dl.ui.settings_manager._config_service")
+@patch("sota_dl.ui.settings_controller.Prompt.ask")
+@patch("sota_dl.ui.settings_controller.print_success")
+@patch("sota_dl.ui.settings_controller.print_error")
+@patch("sota_dl.ui.settings_controller._config_service")
 def test_update_cookies_failure(
     mock_service: Any, mock_error: Any, mock_success: Any, mock_prompt: Any
 ) -> None:
@@ -40,10 +40,10 @@ def test_update_cookies_failure(
     mock_success.assert_not_called()
 
 
-@patch("sota_dl.ui.settings_manager.Prompt.ask")
-@patch("sota_dl.ui.settings_manager.print_success")
-@patch("sota_dl.ui.settings_manager.print_error")
-@patch("sota_dl.ui.settings_manager._config_service")
+@patch("sota_dl.ui.settings_controller.Prompt.ask")
+@patch("sota_dl.ui.settings_controller.print_success")
+@patch("sota_dl.ui.settings_controller.print_error")
+@patch("sota_dl.ui.settings_controller._config_service")
 def test_update_download_path_success(
     mock_service: Any, mock_error: Any, mock_success: Any, mock_prompt: Any
 ) -> None:
@@ -57,10 +57,10 @@ def test_update_download_path_success(
     mock_error.assert_not_called()
 
 
-@patch("sota_dl.ui.settings_manager.Prompt.ask")
-@patch("sota_dl.ui.settings_manager.print_success")
-@patch("sota_dl.ui.settings_manager.print_error")
-@patch("sota_dl.ui.settings_manager._config_service")
+@patch("sota_dl.ui.settings_controller.Prompt.ask")
+@patch("sota_dl.ui.settings_controller.print_success")
+@patch("sota_dl.ui.settings_controller.print_error")
+@patch("sota_dl.ui.settings_controller._config_service")
 def test_update_download_path_failure(
     mock_service: Any, mock_error: Any, mock_success: Any, mock_prompt: Any
 ) -> None:

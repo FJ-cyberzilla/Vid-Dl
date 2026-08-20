@@ -17,7 +17,7 @@ except ImportError:
     HAS_QRCODE = False
 
 
-class OAuth2UIHandler:
+class OAuth2Controller:
     """
     Subscribes to OAuth2 events and renders interactive device login prompts
     with QR codes.

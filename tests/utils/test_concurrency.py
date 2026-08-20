@@ -2,7 +2,7 @@
 
 import asyncio
 import pytest
-from sota_dl.utils.concurrency import AsyncWorkerPool, BoundedExecutor
+from sota_dl.support.concurrency import AsyncWorkerPool, BoundedExecutor
 
 
 @pytest.mark.asyncio

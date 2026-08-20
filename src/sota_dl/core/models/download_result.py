@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any
 from pydantic import BaseModel, Field
-from sota_dl.core.types import DownloadStatus
+from sota_dl.core.domain_types import DownloadStatus
 
 
 class DownloadResult(BaseModel):

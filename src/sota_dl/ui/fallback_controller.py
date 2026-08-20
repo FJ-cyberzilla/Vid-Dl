@@ -1,4 +1,4 @@
-# src/sota_dl/ui/fallback_handler.py
+# src/sota_dl/ui/fallback_controller.py
 
 from rich.console import Console
 from rich.panel import Panel
@@ -9,7 +9,7 @@ from rich.padding import Padding
 from sota_dl.core.event_bus import EventBus, ExtractorFallbackEvent
 
 
-class FallbackUIHandler:
+class FallbackController:
     """Subscribes to extractor fallback events and renders terminal warning banners."""
 
     def __init__(self, console: Console, event_bus: EventBus):

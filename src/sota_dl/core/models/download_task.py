@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from sota_dl.core.types import DownloadStatus
+from sota_dl.core.domain_types import DownloadStatus
 from sota_dl.core.models.video_metadata import VideoMetadata
 
 

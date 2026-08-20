@@ -2,7 +2,7 @@ import pytest
 from typing import Any
 from unittest.mock import MagicMock, patch
 from pathlib import Path
-from sota_dl.ui.download_handler import handle_results, execute_download
+from sota_dl.ui.download_controller import handle_results, execute_download
 from sota_dl.core.models import DownloadResult, DownloadStatus
 
 
@@ -21,7 +21,7 @@ def test_handle_results_success(capsys: Any, tmp_path: Path) -> None:
     ]
     output_path = tmp_path
 
-    with patch("sota_dl.ui.download_handler.print_success") as mock_print:
+    with patch("sota_dl.ui.download_controller.print_success") as mock_print:
         handle_results(results, output_path)
         mock_print.assert_called_once()
         assert "2 downloads completed" in mock_print.call_args[0][0]
@@ -34,7 +34,7 @@ def test_handle_results_mixed(capsys: Any, tmp_path: Path) -> None:
     ]
     output_path = tmp_path
 
-    with patch("sota_dl.ui.download_handler.console.print") as mock_print:
+    with patch("sota_dl.ui.download_controller.console.print") as mock_print:
         handle_results(results, output_path)
         # Check if yellow text is printed for mixed results
         assert any(
@@ -42,11 +42,11 @@ def test_handle_results_mixed(capsys: Any, tmp_path: Path) -> None:
         )
 
 
-@patch("sota_dl.ui.download_handler.get_quality_choice")
-@patch("sota_dl.ui.download_handler._get_downloader_factory")
-@patch("sota_dl.ui.download_handler.handle_results")
-@patch("sota_dl.ui.download_handler.input")
-@patch("sota_dl.ui.download_handler.console.print")
+@patch("sota_dl.ui.download_controller.get_quality_choice")
+@patch("sota_dl.ui.download_controller._get_downloader_factory")
+@patch("sota_dl.ui.download_controller.handle_results")
+@patch("sota_dl.ui.download_controller.input")
+@patch("sota_dl.ui.download_controller.console.print")
 def test_execute_download_success(
     mock_print: Any,
     mock_input: Any,
@@ -65,10 +65,10 @@ def test_execute_download_success(
     mock_handle.assert_called_once()
 
 
-@patch("sota_dl.ui.download_handler.get_quality_choice")
-@patch("sota_dl.ui.download_handler._get_downloader_factory")
-@patch("sota_dl.ui.download_handler.input")
-@patch("sota_dl.ui.download_handler.console.print")
+@patch("sota_dl.ui.download_controller.get_quality_choice")
+@patch("sota_dl.ui.download_controller._get_downloader_factory")
+@patch("sota_dl.ui.download_controller.input")
+@patch("sota_dl.ui.download_controller.console.print")
 def test_execute_download_interrupt(
     mock_print: Any,
     mock_input: Any,

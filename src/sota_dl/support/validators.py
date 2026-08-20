@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from urllib.parse import urlparse
 
+from sota_dl.config.settings import get_download_path as get_config_download_path
 from sota_dl.core.models.download_options import DownloadOptions
 
 # Supported URL schemes (extend as needed)
@@ -11,6 +12,18 @@ _SUPPORTED_SCHEMES = {"http", "https", "magnet", "file"}
 
 # Case-insensitive batch file suffix
 _BATCH_SUFFIX = ".txt"
+
+
+def validate_url(url: str) -> bool:
+    """Validate if the provided string is a valid URL."""
+    result = urlparse(url)
+    return all([result.scheme, result.netloc])
+
+
+def get_download_path() -> Path:
+    """Wrapper for config.settings.get_download_path."""
+    return get_config_download_path()
+...
 
 
 def _is_valid_file_url(path: str) -> bool:

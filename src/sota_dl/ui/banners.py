@@ -7,7 +7,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from sota_dl.ui.colors import THEME, ACCENT, TEXT, ERROR, SUCCESS, MUTED, WARNING
-from sota_dl.utils.helpers import clear_screen
+from sota_dl.support.terminal import clear_screen
 
 logger = logging.getLogger(__name__)
 

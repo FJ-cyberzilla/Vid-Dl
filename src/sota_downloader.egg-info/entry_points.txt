@@ -1,2 +1,0 @@
-[console_scripts]
-sota = sota_dl.main:main_menu

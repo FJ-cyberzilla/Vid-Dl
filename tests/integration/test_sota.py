@@ -1,6 +1,6 @@
 import unittest
 from pathlib import Path
-from sota_dl.utils.validators import is_valid_input
+from sota_dl.support.validators import is_valid_input
 from sota_dl.config.settings import get_download_path
 
 

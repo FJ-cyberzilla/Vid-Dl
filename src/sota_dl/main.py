@@ -10,7 +10,7 @@ from types import FrameType
 
 from rich.panel import Panel
 
-from sota_dl.composition_root import create_sota_manager
+from sota_dl.container import create_sota_manager
 from sota_dl.core.event_bus import EventBus, ShutdownEvent
 from sota_dl.infrastructure.crash_reporter import report_crash
 from sota_dl.infrastructure.logger import setup_logger
