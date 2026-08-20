@@ -139,6 +139,7 @@ install-deps: sys-info ## Auto-install system level packages (FFmpeg, Python hea
 	fi
 
 install: sys-info ## Install application dependencies with smart environment fallbacks
+	@printf " $(ICON_NODE) $(CYAN)Detected System: $(RESET)$(CYAN)$(DISTRO)$(RESET)\n"
 	@if [ "$(IS_TERMUX)" = "1" ]; then \
 		printf " $(ICON_WARN) $(AMBER)Termux mode active. Using pip for lightweight installation...$(RESET)\n"; \
 		$(PI_INSTALL); \
@@ -160,8 +161,16 @@ dev: sys-info ## Install development dependencies
 	fi
 
 update: ## Upgrade locked dependencies (uv lock --upgrade)
+	@printf " $(ICON_NODE) $(CYAN)Detected System: $(RESET)$(CYAN)$(DISTRO)$(RESET)\n"
 	@if [ "$(IS_TERMUX)" = "1" ]; then \
-		printf " $(ICON_WARN) $(AMBER)Update skipped: Dependency locking is not supported in Termux constraint mode.$(RESET)\n"; \
+		printf " $(ICON_NODE) $(CYAN)Updating all lightweight dependencies for Termux...$(RESET)\n"; \
+		if ! pip install --upgrade -q yt-dlp rich pydantic tenacity requests structlog platformdirs 2> /tmp/pip_err.log; then \
+			printf " $(ICON_FAIL) $(ROSE)Error updating dependencies:$(RESET)\n"; \
+			cat /tmp/pip_err.log | sed 's/^/  $(ROSE)• /'; \
+		else \
+			printf " $(ICON_OK) $(EMERALD)Termux dependencies updated.$(RESET)\n"; \
+		fi; \
+		rm -f /tmp/pip_err.log; \
 	else \
 		printf " $(ICON_NODE) $(CYAN)Updating locked dependencies...$(RESET)\n"; \
 		uv lock --upgrade && uv sync --all-extras; \
@@ -254,7 +263,9 @@ build: ## Build distribution packages
 clean: ## Purge caches, build artifacts, and coverage data
 	@printf " $(ICON_NODE) $(CYAN)Cleaning temporary files and build artifacts...$(RESET)\n"
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null
-	@rm -rf build/ dist/ *.egg-info/ .ruff_cache/ .pytest_cache/ .mypy_cache/ htmlcov/ .coverage
+	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null
+	@find . -type d -name ".cache" -exec rm -rf {} + 2>/dev/null
+	@rm -rf build/ dist/ .ruff_cache/ .pytest_cache/ .mypy_cache/ htmlcov/ .coverage
 	@printf " $(ICON_OK) $(EMERALD)Workspace cleaned.$(RESET)\n"
 
 ##@ 💡 System Help
@@ -263,18 +274,22 @@ about: ## Display information about the application, architecture, and developer
 	@printf " $(VIOLET)┌────────────────────────────────────────────────────────────────────────────┐$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(CYAN)SOTA Vid-Dl — System Infographic$(RESET)                                          $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)├────────────────────────────────────────────────────────────────────────────┤$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(AMBER)System Info:$(RESET)                                                               $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Detected OS: $(CYAN)$(DISTRO)$(RESET)                                                  $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Termux: $(if $(filter 1,$(IS_TERMUX)),$(AMBER)Yes$(RESET),$(WHITE)No$(RESET))                                                          $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)├────────────────────────────────────────────────────────────────────────────┤$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(AMBER)Core Capabilities:$(RESET)                                                         $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Multi-threaded async extraction of high-grade audio and video streams.$(RESET) $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Automated OAuth device flow authentication for uninterrupted sessions.$(RESET)  $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Smart, zero-trust caching layer optimized for mobile file systems.$(RESET)     $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(DIM)•$(RESET) $(WHITE)Seamless integration with multi-backend networks (yt-dlp & aria2c).$(RESET)    $(VIOLET)│$(RESET)\n"
-	@printf " $(VIOLET)│$(RESET)                                                                            $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)├────────────────────────────────────────────────────────────────────────────┤$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(EMERALD)Architecture Overview:$(RESET)                                                    $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(WHITE)  [ CLI Layer ]   ──>   [ Orchestrator ]   ──>   [ Downloader/Service ]   $(RESET)$(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)         │                     │                         │                  $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)         ▼                     ▼                         ▼                  $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  [ Rich UI View ]       [ Event Bus ]         [ Adapters (yt-dlp, ffmpeg) ]$(RESET)$(VIOLET)│$(RESET)\n"
-	@printf " $(VIOLET)│$(RESET)                                                                            $(VIOLET)│$(RESET)\n"
+	@printf " $(VIOLET)├────────────────────────────────────────────────────────────────────────────┤$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(BOLD)$(ROSE)Development & Engineering:$(RESET)                                                 $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(WHITE)Built with Python 3.13+, asyncio, Pydantic, and rich layouts.$(RESET)              $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(WHITE)Strict PEP 8, Ruff compliance, and robust SOLID design principles.$(RESET)         $(VIOLET)│$(RESET)\n"
