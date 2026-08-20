@@ -1,5 +1,22 @@
-version: "3.0.0"
-app_title: "SOTA Vid-Dl"
-maintenance_mode: false
-feature_flags:
-  enable_new_ui: true
+# SOTA Downloader Configuration
+# ==============================================================================
+
+version: "2.0.0"
+
+# Application Metadata
+metadata:
+  app_name: "sota-downloader"
+  debug: false
+  log_level: "INFO" # DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+# Download Settings
+download:
+  parallel_tasks: 4
+  timeout_seconds: 30
+  retry_attempts: 3
+  
+# Feature Toggles
+features:
+  use_aria2c: true
+  enable_drm_support: false
+  auto_update: true
