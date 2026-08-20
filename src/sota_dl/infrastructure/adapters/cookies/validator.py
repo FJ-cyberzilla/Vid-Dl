@@ -16,7 +16,7 @@ class CookieValidator:
         """Checks if a cookie has expired."""
         if not isinstance(expires, datetime):
             return False
-        
+
         if expires <= now:
             logger.debug("Cookie expired", domain=domain)
             return True
@@ -28,12 +28,14 @@ class CookieValidator:
         stripped = cookie_domain.lstrip(".")
         if not stripped or not domain:
             return True
-            
-        return any([
-            stripped == domain,
-            domain.endswith(f".{stripped}"),
-            stripped.endswith(f".{domain}")
-        ])
+
+        return any(
+            [
+                stripped == domain,
+                domain.endswith(f".{stripped}"),
+                stripped.endswith(f".{domain}"),
+            ]
+        )
 
     @staticmethod
     def is_valid(
@@ -52,5 +54,5 @@ class CookieValidator:
         if not CookieValidator._domain_matches(cookie_domain, domain):
             logger.debug("Cookie domain mismatch", domain=cookie_domain, target=domain)
             return False
-            
+
         return True

@@ -4,6 +4,7 @@ from enum import Enum
 from pathlib import Path
 from typing import TypedDict
 
+
 class CookieMetadata(TypedDict):
     expires: datetime | None
     secure: bool
@@ -37,6 +38,7 @@ class ExtractionResult:
 
 class CookieError(Exception):
     """Base exception for cookie-related errors."""
+
     pass
 
 
@@ -51,16 +53,19 @@ class CookieExtractionError(CookieError):
 
 class CookieSecurityError(CookieError):
     """Security-related cookie errors."""
+
     pass
 
 
 class CookieDatabaseLockedError(CookieError):
     """Browser database is locked (browser may be running)."""
+
     pass
 
 
 class CookiePermissionError(CookieError):
     """Insufficient permissions to access browser data."""
+
     pass
 
 

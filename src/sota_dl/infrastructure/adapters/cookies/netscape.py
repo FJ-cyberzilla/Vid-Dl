@@ -7,7 +7,10 @@ class NetscapeCookieStrategy(CookieExtractionStrategy):
     """Strategy for Netscape/Mozilla formatted cookies.txt file."""
 
     def extract(self, domain: str) -> ExtractionResult:
-        """Extract cookies from a Netscape/Mozilla formatted cookies.txt file filtered by domain."""
+        """
+        Extract cookies from a Netscape/Mozilla formatted cookies.txt file
+        filtered by domain.
+        """
         if not COOKIES_PATH.exists():
             return self._error_result("cookies.txt not found")
 
@@ -26,7 +29,9 @@ class NetscapeCookieStrategy(CookieExtractionStrategy):
         if not cookies_dict:
             return self._error_result("No matching cookies in cookies.txt")
 
-        return ExtractionResult(success=True, cookies=cookies_dict, source="cookies_txt")
+        return ExtractionResult(
+            success=True, cookies=cookies_dict, source="cookies_txt"
+        )
 
     def _error_result(self, error: str) -> ExtractionResult:
         """Helper to create an error ExtractionResult."""
