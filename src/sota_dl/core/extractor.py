@@ -8,6 +8,7 @@ import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Any, cast
+from urllib.parse import urlparse
 
 import yt_dlp
 
@@ -182,7 +183,12 @@ class MediaExtractor:
 
     def _is_youtube_url(self, url: str) -> bool:
         """Helper to restrict Innertube fallback strictly to YouTube URLs."""
-        return "youtube.com" in url or "youtu.be" in url
+        host = urlparse(url).hostname
+        if not host:
+            return False
+
+        host = host.lower()
+        return host == "youtu.be" or host == "youtube.com" or host.endswith(".youtube.com")
 
     async def _extract_with_retry(self, url: str) -> dict[str, Any]:
         """Wraps raw extraction with the async retry decorator."""
