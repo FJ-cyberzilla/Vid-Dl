@@ -15,6 +15,7 @@ T = TypeVar("T")
 # ---------- Progress Reporting ----------
 TaskID: TypeAlias = int
 
+
 class ProgressReporter(Protocol):
     """
     Protocol for reporting progress to a UI component.
@@ -48,7 +49,12 @@ class ProgressReporter(Protocol):
     def __enter__(self) -> "ProgressReporter":
         return self
 
-    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
         """Context manager exit."""
 
 
@@ -150,5 +156,6 @@ class DRMService(Protocol):
 
 class SystemStatusProvider(Protocol):
     """Protocol for providing system status."""
+
     def get_status(self) -> SystemStatus:
         """Returns the current system status."""

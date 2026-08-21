@@ -18,6 +18,7 @@ from sota_dl.ui.colors import (
 from sota_dl.core.models.system_status import SystemStatus
 from sota_dl.ui.banners import render_main_banner, console
 
+
 def render_dashboard(status: SystemStatus) -> None:
     """Render the main menu dashboard."""
     render_main_banner()

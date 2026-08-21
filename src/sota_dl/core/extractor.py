@@ -188,7 +188,9 @@ class MediaExtractor:
             return False
 
         host = host.lower()
-        return host == "youtu.be" or host == "youtube.com" or host.endswith(".youtube.com")
+        return (
+            host == "youtu.be" or host == "youtube.com" or host.endswith(".youtube.com")
+        )
 
     async def _extract_with_retry(self, url: str) -> dict[str, Any]:
         """Wraps raw extraction with the async retry decorator."""

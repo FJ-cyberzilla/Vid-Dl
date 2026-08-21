@@ -6,6 +6,7 @@ from sota_dl.ui.menu_renderer import (
     render_settings_menu,
     get_menu_selection,
 )
+from sota_dl.core.models.system_status import SystemStatus
 
 
 @patch("sota_dl.ui.menu_renderer.render_main_banner")
@@ -13,7 +14,14 @@ from sota_dl.ui.menu_renderer import (
 def test_render_dashboard(
     mock_print: Any, mock_banner: MagicMock, tmp_path: Path
 ) -> None:
-    render_dashboard(tmp_path)
+    status = SystemStatus(
+        local_storage_path=tmp_path,
+        cookies_path=tmp_path / "cookies",
+        drm_mode="Remote",
+        firebase_status="Configured",
+        firebase_endpoint="https://test.endpoint",
+    )
+    render_dashboard(status)
 
     mock_banner.assert_called_once()
     assert mock_print.called

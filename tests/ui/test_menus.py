@@ -5,7 +5,7 @@ from sota_dl.ui.menus import launch_command_center
 
 
 @patch("sota_dl.ui.menus.check_ffmpeg", return_value=True)
-@patch("sota_dl.ui.menus.Prompt.ask")
+@patch("sota_dl.ui.menus.menu_renderer.Prompt.ask")
 @patch("sota_dl.ui.menus.menu_renderer.render_dashboard")
 def test_launch_command_center_termination(
     mock_render: Any, mock_prompt: MagicMock, mock_check_ffmpeg: Any

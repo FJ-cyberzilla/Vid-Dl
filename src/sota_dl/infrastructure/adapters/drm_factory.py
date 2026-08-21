@@ -4,13 +4,14 @@ Supports hybrid local/remote implementation based on environment capability.
 """
 
 import json
-import urllib.request
+import requests
 import asyncio
 from pathlib import Path
 from collections.abc import Callable
 from sota_dl.core.protocols import DRMService
 from sota_dl.infrastructure.extensions.pywidevine import create_drm_service
 from sota_dl.config.settings import settings
+
 
 class RemoteFirebaseDRMService:
     """Remote implementation of DRMService using Firebase Functions."""
@@ -35,33 +36,30 @@ class RemoteFirebaseDRMService:
         # Prepare payload
         payload = {"url": url, "headers": headers or {}}
         data = json.dumps(payload).encode("utf-8")
-        
-        req = urllib.request.Request(
-            self.api_endpoint,
-            data=data,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {settings.ACCESS_TOKEN or ''}"
-            },
-            method="POST",
-        )
-        
-        loop = asyncio.get_running_loop()
 
         def _request() -> bytes:
-            with urllib.request.urlopen(req, timeout=timeout or settings.TIMEOUT) as response:
-                if response.status != 200:
-                    raise Exception(f"Remote DRM failed with status {response.status}")
-                return response.read()
+            response = requests.post(
+                self.api_endpoint,
+                data=data,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {settings.ACCESS_TOKEN or ''}",
+                },
+                timeout=timeout or settings.TIMEOUT,
+            )
+            if response.status_code != 200:
+                raise Exception(f"Remote DRM failed with status {response.status_code}")
+            return response.content
 
+        loop = asyncio.get_running_loop()
         try:
             result = await loop.run_in_executor(None, _request)
             response_data = json.loads(result.decode("utf-8"))
-            
+
             final_path = Path(response_data["path"])
             if not final_path.exists():
-                 raise FileNotFoundError(f"Decrypted file not found at {final_path}")
-            
+                raise FileNotFoundError(f"Decrypted file not found at {final_path}")
+
             return final_path
         except Exception as e:
             raise Exception(f"Remote DRM processing failed: {e}") from e
@@ -76,5 +74,5 @@ def get_best_drm_service(device_path: Path) -> DRMService:
     local_service = create_drm_service(device_path)
     if local_service:
         return local_service
-    
+
     return RemoteFirebaseDRMService(api_endpoint=settings.FIREBASE_DRM_ENDPOINT)

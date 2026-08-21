@@ -7,7 +7,12 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
-from sota_dl.core.protocols import DownloaderBackend, DownloadResult, DownloadStatus, DownloadOptions
+from sota_dl.core.protocols import (
+    DownloaderBackend,
+    DownloadResult,
+    DownloadStatus,
+    DownloadOptions,
+)
 from sota_dl.infrastructure.adapters.drm_factory import get_best_drm_service
 
 logger = logging.getLogger(__name__)
@@ -44,7 +49,7 @@ class DrmBackend(DownloaderBackend):
             # Run the async decryption synchronously
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            
+
             final_path = loop.run_until_complete(
                 drm_service.adecrypt(
                     url=target,
@@ -53,7 +58,7 @@ class DrmBackend(DownloaderBackend):
                     timeout=options.timeout,
                 )
             )
-            
+
             return DownloadResult(
                 status=DownloadStatus.COMPLETED,
                 file_path=final_path,
