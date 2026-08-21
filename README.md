@@ -1,5 +1,8 @@
 # SOTA Vid-Dl v2.0.0
 
+[![Dependency Graph](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/dependabot/update-graph/badge.svg)](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/dependabot/update-graph)
+
+
 ### High-Performance, Modular, and Resilient Media Extractor 
 
 Termux , Wsl2, PowerShell, Linux 
