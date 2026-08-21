@@ -306,7 +306,7 @@ about: ## Display information about the application, architecture, and developer
 	@printf " $(VIOLET)│$(RESET)                                                                            $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)│$(RESET)  $(WHITE)Engineering & Architecture by $(RESET)$(BRAND)                                $(VIOLET)│$(RESET)\n"
 	@printf " $(VIOLET)└────────────────────────────────────────────────────────────────────────────┘$(RESET)\n"
-	@printf "\n"
+	@printf " $(EMERALD)[Powered by FJ-CyberZilla 🔥] [Firebase DRM Backend ☁️]$(RESET)\n\n"
 
 help: ## Display this categorized command overview
 	@printf "\n"
@@ -321,4 +321,5 @@ help: ## Display this categorized command overview
 	@awk 'BEGIN {FS = ":.*##"} \
 		/^##@/ { printf "\n\033[1;38;5;51m%s\033[0m\n", substr($$0, 5) } \
 		/^[a-zA-Z_-]+:.*?##/ { printf "  \033[38;5;141m%-18s\033[0m \033[38;5;243m❯\033[0m \033[38;5;255m%s\033[0m\n", $$1, $$2 }' $(MAKEFILE_LIST)
-	@printf "\n $(GRAY)──────────────────────────────────────────────────────────────────────────────$(RESET)\n\n"
+	@printf "\n $(GRAY)──────────────────────────────────────────────────────────────────────────────$(RESET)\n"
+	@printf " $(EMERALD)[Powered by FJ-CyberZilla 🔥] [Firebase DRM Backend ☁️]$(RESET)\n\n"

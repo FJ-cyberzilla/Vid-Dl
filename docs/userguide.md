@@ -64,3 +64,14 @@ Modify `config.yaml` to adjust behaviors like download locations, parallelism, a
 
 ## 8. Security
 - Please refer to [`.github/SECURITY.md`](../.github/SECURITY.md) for vulnerability reporting guidelines.
+
+## 9. DRM Decryption
+SOTA supports DRM-protected content via a hybrid architecture:
+- **Local-First**: Uses `pywidevine` if dependencies are locally installed.
+- **Cloud-Augmented**: Automatically falls back to Firebase Function offloading if local cryptography libraries are missing or incompatible.
+
+### Configuration
+Set the following environment variables to enable Cloud-Augmented DRM:
+- `SOTA_FIREBASE_DRM_ENDPOINT`: The URL of your Firebase Function.
+- `SOTA_ACCESS_TOKEN`: The token for API authentication (used as Bearer token).
+- `device_wvd_path`: Provide this in `DownloadOptions` to enable decryption.

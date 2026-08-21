@@ -27,6 +27,7 @@ _WRITABLE_CACHE: dict[Path, bool] = {}
 # ---- OAuth Credentials ----
 OAUTH_CLIENT_ID = os.getenv("SOTA_OAUTH_CLIENT_ID", "")
 OAUTH_CLIENT_SECRET = os.getenv("SOTA_OAUTH_CLIENT_SECRET", "")
+FIREBASE_DRM_ENDPOINT = os.getenv("SOTA_FIREBASE_DRM_ENDPOINT", "")
 ACCESS_TOKEN: str | None = None
 REFRESH_TOKEN: str | None = None
 COOKIES_PATH = Path("cookies.txt")
@@ -82,6 +83,10 @@ class Settings:
     @property
     def OAUTH_CLIENT_SECRET(self) -> str:
         return OAUTH_CLIENT_SECRET
+
+    @property
+    def FIREBASE_DRM_ENDPOINT(self) -> str:
+        return FIREBASE_DRM_ENDPOINT
 
     @property
     def ACCESS_TOKEN(self) -> str | None:

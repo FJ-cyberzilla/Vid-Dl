@@ -5,6 +5,7 @@ from sota_dl.core.event_bus import EventBus
 from sota_dl.core.fallback import FallbackDownloader
 from sota_dl.core.protocols import ProgressReporter
 from sota_dl.infrastructure.adapters.yt_dlp import YtDlpAdapter
+from sota_dl.infrastructure.adapters.drm_adapter import DrmBackend
 from sota_dl.ui.progress_bars import get_sota_progress
 
 
@@ -17,7 +18,7 @@ def create_sota_manager(
     # MediaExtractor and other components currently unused in DownloadService
     # are removed to pass linting.
 
-    downloader = FallbackDownloader(backends=[YtDlpAdapter()])
+    downloader = FallbackDownloader(backends=[DrmBackend(), YtDlpAdapter()])
 
     return DownloadService(
         downloader_backend=downloader,

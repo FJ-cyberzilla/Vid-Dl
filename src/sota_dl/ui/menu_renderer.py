@@ -16,10 +16,10 @@ from sota_dl.ui.colors import (
     VINTAGE_ORANGE,
 )
 from sota_dl.config.settings import COOKIES_PATH
+from sota_dl.core.models.system_status import SystemStatus
 from sota_dl.ui.banners import render_main_banner, console
 
-
-def render_dashboard(output_path: Path) -> None:
+def render_dashboard(status: SystemStatus) -> None:
     """Render the main menu dashboard."""
     render_main_banner()
 
@@ -29,8 +29,10 @@ def render_dashboard(output_path: Path) -> None:
 
     # Display route information in a compact panel
     info_panel = Panel(
-        f"[bold {ACCENT}]STORAGE :[/] [white]{output_path}[/]\n"
-        f"[bold {ACCENT}]COOKIES :[/] [white]{COOKIES_PATH}[/]",
+        f"[bold {ACCENT}]STORAGE :[/] [white]{status.local_storage_path}[/]\n"
+        f"[bold {ACCENT}]COOKIES :[/] [white]{status.cookies_path}[/]\n"
+        f"[bold {ACCENT}]DRM MODE:[/] [white]{status.drm_mode}[/]\n"
+        f"[bold {ACCENT}]FIREBASE:[/] [white]{status.firebase_status}[/]",
         border_style=MUTED,
         padding=(0, 2),
         title=f"[bold {THEME}]SYSTEM STATUS[/]",

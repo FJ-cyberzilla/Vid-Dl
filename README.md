@@ -2,7 +2,7 @@ SOTA Vid-Dl v2.0.0
 High-Performance, Modular, and Resilient Media Extractor for Termux & Android > Maintained by FJ-Cyberzilla • FJ™ Cybertronic Systems
 
 🚀 Overview
-SOTA Vid-Dl rejects the "bloatware" approach common in media download utilities. By utilizing a clean, modular structure following PEP 517 src/ layout and SOLID principles, it minimizes the system footprint, reduces error rates, and ensures that maintenance is surgical—not destructive. Optimized specifically for mobile environments like Termux on Android.
+SOTA Vid-Dl rejects the "bloatware" approach common in media download utilities. By utilizing a clean, modular structure following PEP 517 src/ layout and SOLID principles, it minimizes the system footprint, reduces error rates, and ensures that maintenance is surgical—not destructive. Optimized specifically for mobile environments like Termux on Android, including hybrid support for cloud-offloaded DRM decryption.
 
 🏛️ Architecture Philosophy
 - Domain Boundary Refactoring: Enforced strict separation of concerns across layers (CLI Layer → Orchestrator → Service Layer → Repository/Adapter).

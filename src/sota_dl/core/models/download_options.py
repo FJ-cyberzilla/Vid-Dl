@@ -13,5 +13,6 @@ class DownloadOptions(BaseModel):
     retries: int = 3
     timeout: float | None = 30.0
     cookiefile: Path | None = None
+    device_wvd_path: Path | None = None
     extra_args: dict[str, Any] = Field(default_factory=dict)
     dry_run: bool = False

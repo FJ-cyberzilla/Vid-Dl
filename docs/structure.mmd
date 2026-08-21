@@ -11,6 +11,9 @@ graph TD
         SVC[Service Layer: download_service.py]:::core
         TYPES[Core Types: types.py]:::core
         ADPT[Adapters: yt-dlp, ffmpeg, aria2c]:::inf
+        DRM[DRM Service Protocol]:::core
+        LOCAL[WidevineDRM: Local]:::inf
+        REMOTE[RemoteFirebaseDRMService]:::inf
         CACHE[Cache Layer: infrastructure/cache.py]:::inf
         UI[UI Layer: menus.py, progress_bars.py]:::ui
     end
@@ -18,6 +21,9 @@ graph TD
     CLI --> ORCH
     ORCH --> SVC
     SVC --> ADPT
+    SVC --> DRM
+    DRM --> LOCAL
+    DRM --> REMOTE
     SVC --> CACHE
     ORCH --> UI
     SVC -.-> TYPES
