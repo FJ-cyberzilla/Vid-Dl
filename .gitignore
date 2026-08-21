@@ -40,7 +40,6 @@ data/
 *.db
 
 # Documentation & Local Config
-GEMINI.md
 # (Add other local project instruction files as needed)
 
 # yt-dlp Caches, Fragments & Temporary Downloads
