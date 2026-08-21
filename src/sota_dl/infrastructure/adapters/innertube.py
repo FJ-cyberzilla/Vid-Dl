@@ -99,11 +99,15 @@ class AndroidInnertubeAdapter:
     def _extract_video_id(self, url: str) -> str | None:
         """Extracts the 11-character video ID from a YouTube URL."""
         parsed = urllib.parse.urlparse(url)
-        if "youtu.be" in parsed.netloc:
+        host = (parsed.hostname or "").lower()
+
+        if host == "youtu.be":
             return parsed.path.lstrip("/")
-        if "youtube.com" in parsed.netloc:
+
+        if host == "youtube.com" or host.endswith(".youtube.com"):
             qs = urllib.parse.parse_qs(parsed.query)
             return qs.get("v", [None])[0]
+
         return None
 
     def _parse_player_response(
