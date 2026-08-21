@@ -1,6 +1,6 @@
 # SOTA Vid-Dl v2.0.0
 
-[![Dependency Graph](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/dependabot/update-graph/badge.svg)](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/dependabot/update-graph)
+[![Dependency Graph](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/dependabot/update-graph/badge.svg)](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/dependabot/update-graph)[![pages-build-deployment](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/pages/pages-build-deployment)[![Dependabot Updates](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/dependabot/dependabot-updates)[![CodeQL](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/FJ-cyberzilla/Vid-Dl/actions/workflows/github-code-scanning/codeql)
 
 
 ### High-Performance, Modular, and Resilient Media Extractor 
