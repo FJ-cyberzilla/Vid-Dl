@@ -61,3 +61,17 @@ def test_run_ytdlp_sync_failure(mock_ytdl: Any, tmp_path: Path) -> None:
 
     with pytest.raises(ExtractionError):
         extractor._run_ytdlp_sync("https://invalid")
+
+def test_is_youtube_url() -> None:
+    from unittest.mock import MagicMock
+    cache = MagicMock()
+    extractor = MediaExtractor(cache=cache)
+
+    assert extractor._is_youtube_url("https://youtube.com/watch?v=123") is True
+    assert extractor._is_youtube_url("https://www.youtube.com/watch?v=123") is True
+    assert extractor._is_youtube_url("https://youtu.be/123") is True
+    assert extractor._is_youtube_url("https://m.youtube.com/watch?v=123") is True
+
+    assert extractor._is_youtube_url("https://not-youtube.com/watch?v=123") is False
+    assert extractor._is_youtube_url("https://evil.com/youtube.com/watch?v=123") is False
+    assert extractor._is_youtube_url("https://youtube.com.attacker.com/watch?v=123") is False

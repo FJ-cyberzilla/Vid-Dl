@@ -7,7 +7,7 @@ import json
 import urllib.request
 import asyncio
 from pathlib import Path
-from typing import Callable, Any
+from collections.abc import Callable
 from sota_dl.core.protocols import DRMService
 from sota_dl.infrastructure.extensions.pywidevine import create_drm_service
 from sota_dl.config.settings import settings

@@ -15,7 +15,6 @@ from sota_dl.ui.colors import (
     VINTAGE_PINK,
     VINTAGE_ORANGE,
 )
-from sota_dl.config.settings import COOKIES_PATH
 from sota_dl.core.models.system_status import SystemStatus
 from sota_dl.ui.banners import render_main_banner, console
 

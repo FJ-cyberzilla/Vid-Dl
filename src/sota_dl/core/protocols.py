@@ -1,4 +1,4 @@
-from typing import Protocol, TypeVar, Union
+from typing import Protocol, TypeVar
 from pathlib import Path
 from collections.abc import Callable
 from typing import TypeAlias
@@ -60,7 +60,7 @@ class DownloaderBackend(Protocol):
         self,
         target: str,
         options: DownloadOptions,
-        progress_hook: Callable[[dict[str, Union[str, float, int]]], None],
+        progress_hook: Callable[[dict[str, str | float | int]], None],
     ) -> DownloadResult:
         """Execute a download."""
 

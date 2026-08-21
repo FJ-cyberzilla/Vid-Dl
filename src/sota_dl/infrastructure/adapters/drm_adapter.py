@@ -5,7 +5,6 @@ Adapter for DRM decryption, compliant with DownloaderBackend protocol.
 import asyncio
 import logging
 from collections.abc import Callable
-from typing import Any, Union
 from pathlib import Path
 
 from sota_dl.core.protocols import DownloaderBackend, DownloadResult, DownloadStatus, DownloadOptions
@@ -21,7 +20,7 @@ class DrmBackend(DownloaderBackend):
         self,
         target: str,
         options: DownloadOptions,
-        progress_hook: Callable[[dict[str, Union[str, float, int]]], None],
+        progress_hook: Callable[[dict[str, str | float | int]], None],
     ) -> DownloadResult:
         """Execute a DRM-protected download."""
         if not options.device_wvd_path:

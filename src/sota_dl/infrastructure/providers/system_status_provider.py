@@ -1,8 +1,6 @@
 
 from sota_dl.core.models.system_status import SystemStatus
 from sota_dl.config.settings import settings
-from pathlib import Path
-import shutil
 
 class SystemStatusProviderImpl:
     def get_status(self) -> SystemStatus:
