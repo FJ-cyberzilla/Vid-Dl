@@ -168,8 +168,7 @@ def download(self, url: str, options: Dict[str, Any]) -> bool:
 ...
 def supports(self, url: str) -> bool:
 ... 2. infrastructure/ (Adapters & External Bindings)
-● adapters/yt_dlp.py & yt_dlp_wrapper.py: Converts system domain models into yt-dlp
-executable options, managing cookies, header injection, and output formatting.
+● adapters/yt_dlp.py: Interfaces with the Go bridge (bin/bridge) to convert system domain models into executable yt-dlp arguments, managing cookies, header injection, and output formatting.
 ● aria2c.py: Invokes aria2c with multi-segment socket pooling (-s 16 -x 16) for maximum
 bandwidth saturation.
 ● ffmpeg.py: Manages video-audio stream merging (e.g., combining .m4a and .mp4 dash

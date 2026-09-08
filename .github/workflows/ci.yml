@@ -20,8 +20,11 @@ jobs:
           python-version: "3.11"
           
       - name: Install System Dependencies
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg aria2
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg aria2 golang
         
+      - name: Build Go Bridge
+        run: make bridge
+
       - name: Install dependencies
         run: uv sync
         
