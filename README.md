@@ -25,7 +25,10 @@ SOTA Vid-Dl rejects the "bloatware" approach common in media download utilities.
 ├── Makefile
 ├── pyproject.toml
 ├── README.md
+├── bin/
+│   └── bridge
 ├── src/
+│   ├── go_bridge/
 │   └── sota_dl/
 │       ├── config/
 │       ├── core/
@@ -33,18 +36,14 @@ SOTA Vid-Dl rejects the "bloatware" approach common in media download utilities.
 │       ├── ui/
 │       └── utils/
 ├── tests/
-│   ├── config/
-│   ├── core/
-│   ├── infrastructure/
-│   ├── integration/
-│   ├── ui/
-│   └── utils/
+│   ├── ...
 └── docs/
 
 ⚙️ Core Components
 - sota_dl/core/: Business logic (controller, download_service, models).
-- sota_dl/infrastructure/: Adapters (yt-dlp, aria2c, ffmpeg), telemetry, system monitoring.
+- sota_dl/infrastructure/: Adapters (yt-dlp via Go bridge, aria2c, ffmpeg), telemetry, system monitoring.
 - sota_dl/ui/: Interactive CLI rendering.
+- go_bridge/: High-performance Go infrastructure component for binary execution.
 - sota_dl/config/: Application settings and environment management.
 - sota_dl.support/: Helper functions and utilities.
 
@@ -55,6 +54,7 @@ make <command>
 
 Command | Description
 --- | ---
+bridge | Build the Go bridge binary
 build | Build distributable package
 clean | Remove temporary files, caches, and test outputs
 coverage | Show code coverage summary directly in the terminal

@@ -4,6 +4,7 @@ graph TD
     classDef core fill:#ffcc00,stroke:#333,stroke-width:2px,color:#000;
     classDef inf fill:#99ccff,stroke:#333,stroke-width:2px,color:#000;
     classDef ui fill:#ff99cc,stroke:#333,stroke-width:2px,color:#000;
+    classDef go fill:#88dd88,stroke:#333,stroke-width:2px,color:#000;
 
     subgraph "Application"
         CLI[CLI Layer: main.py]:::cli
@@ -11,6 +12,7 @@ graph TD
         SVC[Service Layer: download_service.py]:::core
         TYPES[Core Types: types.py]:::core
         ADPT[Adapters: yt-dlp, ffmpeg, aria2c]:::inf
+        GO[Go Bridge: bin/bridge]:::go
         DRM[DRM Service Protocol]:::core
         LOCAL[WidevineDRM: Local]:::inf
         REMOTE[RemoteFirebaseDRMService]:::inf
@@ -21,6 +23,7 @@ graph TD
     CLI --> ORCH
     ORCH --> SVC
     SVC --> ADPT
+    ADPT --> GO
     SVC --> DRM
     DRM --> LOCAL
     DRM --> REMOTE
