@@ -256,6 +256,11 @@ test: ## Run test suite with inline coverage
 	@printf " $(ICON_NODE) $(CYAN)Running tests...$(RESET)\n"
 	@PYTHONPATH=src $(PI_RUN) pytest --cov --cov-report=html --cov-report=term || PYTHONPATH=src pytest --cov --cov-report=html --cov-report=term
 
+bridge: ## Build the Go bridge binary
+	@printf " $(ICON_NODE) $(CYAN)Building Go bridge...$(RESET)\n"
+	@cd src/go_bridge && go build -o ../../bin/bridge ./cmd/bridge
+	@printf " $(ICON_OK) $(EMERALD)Go bridge built at $(WHITE)bin/bridge$(RESET)\n"
+
 coverage: ## View terminal coverage summary
 	@printf "\n $(BOLD)$(CYAN)── Coverage Report Summary ────────────────────────────────────$(RESET)\n"
 	@if [ -f htmlcov/index.html ]; then \
@@ -275,7 +280,7 @@ clean: ## Purge caches, build artifacts, and coverage data
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null
 	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null
 	@find . -type d -name ".cache" -exec rm -rf {} + 2>/dev/null
-	@rm -rf build/ dist/ .ruff_cache/ .pytest_cache/ .mypy_cache/ htmlcov/ .coverage
+	@rm -rf build/ dist/ .ruff_cache/ .pytest_cache/ .mypy_cache/ htmlcov/ .coverage bin/bridge
 	@printf " $(ICON_OK) $(EMERALD)Workspace cleaned.$(RESET)\n"
 
 ##@ 💡 System Help
