@@ -13,6 +13,7 @@ import yt_dlp
 from yt_dlp.utils import DownloadError
 
 from sota_dl.core.models import DownloadOptions, DownloadResult, DownloadStatus
+from sota_dl.infrastructure.adapters.bridge_client import BridgeClient
 
 logger = logging.getLogger(__name__)
 
@@ -194,10 +195,10 @@ class YtDlpEngine:
 # Adapter (Protocol Compliant)
 # ---------------------------------------------------------------------------
 class YtDlpAdapter:
-    """Adapter to map YtDlpEngine to DownloaderBackend protocol."""
+    """Adapter to map Go bridge to DownloaderBackend protocol."""
 
-    def __init__(self, engine: YtDlpEngine | None = None) -> None:
-        self.engine = engine or YtDlpEngine()
+    def __init__(self) -> None:
+        self.bridge = BridgeClient()
 
     def download(
         self,
@@ -205,25 +206,30 @@ class YtDlpAdapter:
         options: DownloadOptions,
         progress_hook: Callable[[dict[str, Any]], Any],
     ) -> DownloadResult:
-        """Execute a download."""
-        extra_opts = options.extra_args.copy()
-        if options.cookiefile:
-            extra_opts["cookiefile"] = str(options.cookiefile)
+        """Execute a download via Go bridge."""
+        
+        # Prepare params to match Go's YtDlpOptions struct
+        params = {
+            "URL": target,
+            "OutputDir": str(options.output_dir),
+            "OutputTemplate": "%(title)s.%(ext)s",
+            "UseAria2c": "true", # Must be string
+            "CookieFile": str(options.cookiefile) if options.cookiefile else "",
+            "ExtraArgs": str(options.extra_args) if options.extra_args else ""
+        }
 
-        try:
-            file_path = self.engine.download(
-                target,
-                options.output_dir,
-                progress_callback=progress_hook,
-                extra_opts=extra_opts,
-            )
+        response = self.bridge.call("download_yt_dlp", params)
+        
+        if response.get("status") == "ok":
             return DownloadResult(
                 status=DownloadStatus.COMPLETED,
-                file_path=file_path,
+                file_path=Path(response["result"].get("FilePath", "")),
                 metadata={"target": target},
             )
-        except YtDlpError as e:
-            logger.exception("Download failed for %s", target)
+        else:
+            logger.error("Download failed for %s: %s", target, response.get("error"))
             return DownloadResult(
-                status=DownloadStatus.FAILED, error=str(e), metadata={"target": target}
+                status=DownloadStatus.FAILED, 
+                error=response.get("error", "Unknown error"), 
+                metadata={"target": target}
             )

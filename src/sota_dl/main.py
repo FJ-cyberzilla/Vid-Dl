@@ -89,10 +89,12 @@ async def _run_app_tasks() -> None:
     create_sota_manager(event_bus=event_bus)
     ui_task = asyncio.create_task(asyncio.to_thread(launch_command_center))
 
+    shutdown_task = asyncio.create_task(shutdown_event.wait())
     _, pending = await asyncio.wait(
-        [ui_task, shutdown_event.wait()],
+        [ui_task, shutdown_task],
         return_when=asyncio.FIRST_COMPLETED,
     )
+    shutdown_task.cancel()
 
     if shutdown_event.is_set():
         console.print(f"\n[{MUTED}]Shutdown signal processed. Cleaning up...[/]")
