@@ -66,6 +66,9 @@ Thumbs.db
 .vscode/
 .gemini/
 
+# Go build artifacts
+go.sum
+
 # Local Scratchpad & Temporary Files
 *.tmp
 *.bak
